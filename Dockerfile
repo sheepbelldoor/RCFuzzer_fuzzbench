@@ -9,13 +9,13 @@ FROM fuzzer_base/mopt as mopt
 FROM fuzzer_base/radamsa as radamsa
 FROM fuzzer_base/redqueen as redqueen
 
-FROM autofz_bench/afl as bench_afl
-FROM autofz_bench/angora as bench_angora
-FROM autofz_bench/lafintel as bench_lafintel
-FROM autofz_bench/libfuzzer as bench_libfuzzer
-FROM autofz_bench/radamsa as bench_radamsa
-FROM autofz_bench/redqueen as bench_redqueen
-FROM autofz_bench/coverage as bench_coverage
+FROM rcfuzz_bench/afl as bench_afl
+FROM rcfuzz_bench/angora as bench_angora
+FROM rcfuzz_bench/lafintel as bench_lafintel
+FROM rcfuzz_bench/libfuzzer as bench_libfuzzer
+FROM rcfuzz_bench/radamsa as bench_radamsa
+FROM rcfuzz_bench/redqueen as bench_redqueen
+FROM rcfuzz_bench/coverage as bench_coverage
 
 FROM ubuntu:16.04
 
@@ -70,7 +70,7 @@ RUN apt install -y ninja-build wget cmake
 
 RUN echo "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main" >> /etc/apt/sources.list && \
   echo "deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main" >> /etc/apt/sources.list && \
-  apt-key adv --keyserver keyserver.ubuntu.com:80 --recv-keys 15CF4D18AF4F7421 && \
+  apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 15CF4D18AF4F7421 && \
   apt update && \
     apt-get install -y clang-12 llvm-12-dev lld-12 lld-12 clangd-12 lldb-12 libc++1-12 libc++-12-dev libc++abi-12-dev && \
   update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 100 && \
@@ -114,7 +114,7 @@ COPY --chown=$UID:$GID --from=bench_libfuzzer /d /d
 COPY --chown=$UID:$GID --from=bench_coverage /d /d
 
 # Used to calculate coverage. We need source code
-COPY --chown=$UID:$GID --from=bench_coverage /autofz_bench /autofz_bench
+COPY --chown=$UID:$GID --from=bench_coverage /rcfuzz_bench /rcfuzz_bench
 
 USER root
 RUN cp /fuzzer/LearnAFL/learning_engine.py /usr/local/bin
@@ -148,14 +148,14 @@ RUN locale-gen en_US.UTF-8
 COPY init.sh /
 COPY afl-cov/ /afl-cov
 
-COPY autofz/ /autofz/autofz
-COPY draw/   /autofz/draw
-COPY setup.py  /autofz/
-COPY requirements.txt  /autofz/
+COPY rcfuzz/ /rcfuzz/rcfuzz
+COPY draw/   /rcfuzz/draw
+COPY setup.py  /rcfuzz/
+COPY requirements.txt  /rcfuzz/
 
-RUN pip install /autofz
+RUN pip install /rcfuzz
 
-ENV PATH="/autofz/autofz:/afl-cov:${PATH}"
+ENV PATH="/rcfuzz/rcfuzz:/afl-cov:${PATH}"
 
 # Add autofz user with proper UID and GID (2000 when this image is built)
 
