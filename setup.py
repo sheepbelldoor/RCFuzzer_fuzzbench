@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import os
 
 # packages = find_packages()
-packages = ['rcfuzz', 'rcfuzz.fuzzer_driver', 'draw']
+packages = ['rcfuzz', 'rcfuzz.fuzzer_driver']
 
 # https://github.com/google-research/arxiv-latex-cleaner/blob/main/setup.py
 
@@ -24,8 +24,7 @@ setup(
     author_email="hyeonminmo@hanyang.ac.kr",
     install_requires=install_requires,
     entry_points={
-        'console_scripts': ['rcfuzz = rcfuzz.main:main',
-                            'rcfuzz-draw = draw.draw_main:main'],
+        'console_scripts': ['rcfuzz = rcfuzz.main:main'],
     },
     package_data={'rcfuzz': ['aflforkserver.so']},
     python_requires=">=3.9.4",

@@ -149,7 +149,6 @@ COPY init.sh /
 COPY afl-cov/ /afl-cov
 
 COPY rcfuzz/ /rcfuzz/rcfuzz
-COPY draw/   /rcfuzz/draw
 COPY setup.py  /rcfuzz/
 COPY requirements.txt  /rcfuzz/
 
