@@ -35,10 +35,13 @@ from .common import IS_DEBUG, IS_PROFILE, nested_dict
 from .datatype import Bitmap
 from .mytype import BitmapContribution, Coverage, Fuzzer, Fuzzers
 from .singleton import SingletonABCMeta
+from . import thompson 
 
 config: Dict = Config.CONFIG
 
 logger = logging.getLogger('autofz.main')
+
+logging.basicConfig(level=logging.INFO, filename='testlogging.log', filemode='w', format ='%(asctime)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s')
 
 console = Console()
 LOG = nested_dict()
@@ -146,17 +149,19 @@ def thread_health_check():
 
 
 def sleep(seconds: int, log=False):
+    logger.info(f'main 001 -  sleep time: {seconds}, log: {log}')
     '''
     hack to early return
     '''
     global SLEEP_GRANULARITY
     if log:
-        logger.info(f'sleep {seconds} seconds')
+        logger.info(f'main 002 - sleep {seconds} seconds')
     else:
-        logger.debug(f'sleep {seconds} seconds')
+        logger.debug(f' sleep {seconds} seconds')
     remain = seconds
     while remain and not is_end():
         t = min(remain, SLEEP_GRANULARITY)
+        logger.info(f'main 003 - remain: {remain}, SLEEP_GRAUNLARITY: {SLEEP_GRANULARITY}, t : {t}')
         time.sleep(t)
         remain -= t
 
@@ -173,20 +178,20 @@ def save_tar():
     tar_path = os.path.join(OUTPUT, f'{TARGET}.tar.gz')
     if os.path.exists(fuzzer_files_path) and os.path.isdir(fuzzer_files_path):
         cmd = f'tar caf {tar_path} -C {OUTPUT} {TARGET} --remove-files'
-        logger.info(f'{cmd}')
+        logger.info(f'main 004 - {cmd}')
         subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
     # for eval directories
     fuzzer_files_path = os.path.join(OUTPUT, 'eval')
     tar_path = os.path.join(OUTPUT, f'{TARGET}_{LOG_DATETIME}.tar.gz')
     if os.path.exists(fuzzer_files_path) and os.path.isdir(fuzzer_files_path):
         cmd = f'tar caf {tar_path} -C {OUTPUT} eval --remove-files'
-        logger.info(f'{cmd}')
+        logger.info(f'main 005 - {cmd}')
         subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
 
 
 def cleanup(exit_code=0):
     global ARGS
-    logger.info('cleanup')
+    logger.info('main 006 - cleanup')
     LOG['end_time'] = time.time()
     write_log()
     for fuzzer in FUZZERS:
@@ -241,7 +246,7 @@ def append_log(key, val, do_copy=True):
 def write_log():
     global LOG, RUNNING
     if not RUNNING:
-        logger.info('Not RUNNING, No log')
+        logger.info('main 007 - Not RUNNING, No log')
         return
     if OUTPUT and LOG_FILE_NAME:
         with open(f'{OUTPUT}/{LOG_FILE_NAME}', 'w') as f:
@@ -323,7 +328,7 @@ def start(fuzzer: Fuzzer,
                                 input_dir=input_dir,
                                 empty_seed=empty_seed)
     kw['command'] = 'start'
-    # print(kw)
+
     fuzzer_driver.main(**kw)
     scale(fuzzer=fuzzer,
           scale_num=jobs,
@@ -395,7 +400,7 @@ def do_sync(fuzzers: Fuzzers, host_root_dir: Path) -> bool:
     sync.sync2(TARGET, fuzzers, host_root_dir)
     end_time = time.time()
     diff = end_time - start_time
-    if IS_PROFILE: logger.info(f'sync take {diff} seconds')
+    if IS_PROFILE: logger.info(f'main 008 - sync take {diff} seconds')
     coverage.sync()
     return True
 
@@ -405,6 +410,7 @@ def update_fuzzer_log(fuzzers):
     new_log_entry = maybe_get_fuzzer_info(fuzzers)
     if not new_log_entry: return
     new_log_entry = compress_fuzzer_info(fuzzers, new_log_entry)
+    
     new_log_entry['timestamp'] = time.time()
     # NOTE: don't copy twice
     append_log('log', new_log_entry, do_copy=False)
@@ -610,13 +616,14 @@ def fuzzer_bitmap_diff(fuzzers, before_fuzzer_info, after_fuzzer_info):
     after_bitmap = after_fuzzer_info['bitmap']
     bitmap_diff = {}
     for fuzzer in fuzzers:
+        logger.info(f'main 601 - prep bitmap diff - before_bitmap : { before_global_bitmap}, after_bitmap : { after_bitmap[fuzzer]}') 
         bitmap_diff[fuzzer] = after_bitmap[fuzzer] - before_global_bitmap
     return bitmap_diff
 
 
 class SchedulingAlgorithm(metaclass=SingletonABCMeta):
     @abstractmethod
-    def __init__(self, fuzzers, focus=None, one_core=False, N=1):
+    def __init__(self, fuzzers,tsFuzzers, focus=None, one_core=False, N=1):
         pass
 
     @abstractmethod
@@ -627,10 +634,12 @@ class SchedulingAlgorithm(metaclass=SingletonABCMeta):
 class Schedule_Base(SchedulingAlgorithm):
     def __init__(self,
                  fuzzers: Fuzzers,
+                 tsFuzzers,
                  prep_time: int,
                  focus_time: int,
                  jobs: int = 1):
         self.fuzzers = fuzzers
+        self.tsFuzzers = tsFuzzers
         self.name = 'schedule_base'
 
         # to support multicore
@@ -758,9 +767,14 @@ class Schedule_Base(SchedulingAlgorithm):
     def prep_round_robin(self) -> bool:
         prep_time = self.prep_time
         remain_time = prep_time
+        for fuzzer in FUZZERS:
+            self.tsFuzzers[fuzzer].threshold = self.diff_threshold / 10
+
+        prep_round = 1
+
         while remain_time > 0:
             '''
-            run 30 seconds for each fuzzer and see whether there is a winner
+            run 60 seconds for each fuzzer and see whether there is a winner
             '''
             run_time = min(remain_time, 30)
             for prep in self.prep_fuzzers:
@@ -771,10 +785,37 @@ class Schedule_Base(SchedulingAlgorithm):
             '''
             detect whether there is a winner
             '''
-            self.has_winner_round = self.has_winner()
+            current_fuzzer_info = get_fuzzer_info(self.fuzzers)
+
+            if prep_round == 1:
+                bitmap_diff =fuzzer_bitmap_diff(self.fuzzers, self.before_prep_fuzzer_info, current_fuzzer_info)
+            else:
+                bitmap_diff = fuzzer_bitmap_diff(self.fuzzers, previous_fuzzer_info, current_fuzzer_info)
+
+            for fuzzer in self.fuzzers:
+                logger.info(f'main 042 - fuzzer : {fuzzer}, fuzzer_bitmap_diff : {bitmap_diff[fuzzer].count()}')
+                if bitmap_diff[fuzzer].count() > self.tsFuzzers[fuzzer].threshold:
+                    thompson.updateFuzzerCountPrep(self.tsFuzzers, fuzzer, 1)
+                    self.tsFuzzers[fuzzer].threshold += self.tsFuzzers[fuzzer].threshold
+                else:
+                    thompson.updateFuzzerCountPrep(self.tsFuzzers, fuzzer, 0)
+                    self.tsFuzzers[fuzzer].threshold *= 0.5
+                    
+
+            for fuzzer in FUZZERS:
+                logger.info(f'main 043 - prep_round : {prep_round} end result - fuzzer : { fuzzer }, fuzzer_success : { self.tsFuzzers[fuzzer].S }, fuzzer_fail : { self.tsFuzzers[fuzzer].F}, threshold : {self.tsFuzzers[fuzzer].threshold }')
+            previous_fuzzer_info = current_fuzzer_info
+            prep_round+=1
+
+            global OUTPUT
+            do_sync(self.fuzzers,OUTPUT)
+
+
+
+#            self.has_winner_round = self.has_winner()
             # NOTE: early exit!
-            if self.has_winner_round:
-                return True
+#            if self.has_winner_round:
+#                return True
         return False
 
     def prep_parallel(self) -> bool:
@@ -806,7 +847,7 @@ class Schedule_Base(SchedulingAlgorithm):
                 return True
         return False
 
-    def focus_cpu_assign(self, new_cpu_assign, focus_time: int) -> bool:
+    def focus_cpu_assign(self,  new_cpu_assign, focus_time: int) -> bool:
         '''
         return whether we find new coverage during focus phase
         '''
@@ -819,6 +860,8 @@ class Schedule_Base(SchedulingAlgorithm):
         focus_total = focus_time * num_prep_fuzzers
         focus_fuzzer_cpu_time = {}
 
+        logger.info(f'main 009 - focus_total: { focus_total}, focus_time: {focus_time}')
+
         run_fuzzers = []
 
         # sorted now!
@@ -826,15 +869,63 @@ class Schedule_Base(SchedulingAlgorithm):
         for fuzzer, new_cpu in sorted_cpu_assign:
             run_fuzzers.append(fuzzer)
             focus_fuzzer_cpu_time[fuzzer] = focus_total * (new_cpu / JOBS)
+            logger.info(f'main 010 - focus_fuzzer_cpu_time: {focus_fuzzer_cpu_time[fuzzer]}, fuzzer: {fuzzer}, new_cpu:{new_cpu}')
 
         logger.debug(f"cpu_assign: {new_cpu_assign}")
         logger.debug(f"sorted_cpu_assign: {sorted_cpu_assign}")
         logger.debug(f"focus_fuzzer_time: {focus_fuzzer_cpu_time}")
+
+        focusFail = 0
+        focusSuccess = 0
+
+        focusBeforeInfo = get_fuzzer_info(self.fuzzers)
+
+        previousBitmap = focusBeforeInfo['global_bitmap'].count()
+        previousBug = focusBeforeInfo['global_unique_bugs']['unique_bugs']
+
+        focusThreshold = self.diff_threshold/10
+
         for fuzzer in run_fuzzers:
             t = focus_fuzzer_cpu_time[fuzzer]
+            logger.info(f'main 011 - focus {fuzzer} runTime :{t}')
             logger.debug(f"focus_cpu_assign: {fuzzer}, time: {t}")
-            self.run_one(fuzzer)
-            sleep(t)
+
+            focusRemainTime = t
+            logger.info(f'main 701 - focus remain time init : {focusRemainTime}')
+            focusRound = 1
+
+            while focusRemainTime > 0 :
+                focusRunTime = min(focusRemainTime, 60)
+                self.run_one(fuzzer)
+                sleep(focusRunTime)
+
+                self.tsFuzzers[fuzzer].total_runTime += focusRunTime
+                focusRoundInfo = get_fuzzer_info(self.fuzzers)
+                currentBitmap = focusRoundInfo['bitmap'][fuzzer].count()
+                currentBug = focusRoundInfo['unique_bugs'][fuzzer]['unique_bugs']
+
+                # Evaluation
+                if currentBitmap - previousBitmap > self.tsFuzzers[fuzzer].threshold  or currentBug - previousBug >0:
+                    thompson.updateFuzzerCount(self.tsFuzzers,run_fuzzers,1)
+                    focusFail = 0
+                    focusSuccess += 1
+                    #focusRemainTime += t
+                    self.tsFuzzers[fuzzer].threshold += focusThreshold
+                else:
+                    thompson.updateFuzzerCount(self.tsFuzzers,run_fuzzers,0)
+                    focusFail += 1
+                    #self.tsFuzzers[fuzzer].stack += 1
+                    self.tsFuzzers[fuzzer].threshold *= 0.5
+                focusRemainTime -= focusRunTime
+
+                logger.info(f'main 501 - focus round : {focusRound}end result - fuzzer : {fuzzer}, previousBitmap : {previousBitmap}, currentBitmap : {currentBitmap}, previousBug : {previousBug}, currentBug : {currentBug}, focusSuccess : {focusSuccess}, focusFail : {focusFail}, fuzzer success :  {self.tsFuzzers[fuzzer].S}, fuzzer fail : {self.tsFuzzers[fuzzer].F}, focusThreshold : {self.tsFuzzers[fuzzer].threshold}, fuzzer stack : {self.tsFuzzers[fuzzer].stack}, focusRemainTime : {focusRemainTime}, focusRunTime : {focusRunTime}')
+                previousBitmap = currentBitmap
+                previousBug = currentBug
+                focusRound += 1
+
+                # 300s
+                if focusFail == 5:
+                    break
             # we can sync infinitely in focus session
             # optimization: only sync between run_fuzzers
             do_sync(run_fuzzers, OUTPUT)
@@ -974,13 +1065,13 @@ class Schedule_Base(SchedulingAlgorithm):
         while True:
             if is_end(): return
             if not self.pre_round(): continue
-            logger.info(f'round {self.round_num} start')
+            logger.info(f'main 012 - round {self.round_num} start')
             self.one_round()
-            logger.info(f'round {self.round_num} end')
+            logger.info(f'main 013 - round {self.round_num} end')
             self.post_round()
 
     def pre_run(self) -> bool:
-        logger.info(f"{self.name}: pre_run")
+        logger.info(f"main 014 - {self.name}: pre_run")
         return True
 
     def run(self):
@@ -990,7 +1081,7 @@ class Schedule_Base(SchedulingAlgorithm):
         self.post_run()
 
     def post_run(self):
-        logger.info(f"{self.name}: post_run")
+        logger.info(f"main 015 - {self.name}: post_run")
 
 
 class Schedule_EnFuzz(Schedule_Base):
@@ -1010,7 +1101,7 @@ class Schedule_EnFuzz(Schedule_Base):
         if not update_success:
             SLEEP = 10
             logger.info(
-                f'wait for all fuzzer having coverage, sleep {SLEEP} seconds')
+                f'main 016 - wait for all fuzzer having coverage, sleep {SLEEP} seconds')
             sleep(SLEEP)
             global START_TIME
             elasp = time.time() - START_TIME
@@ -1038,7 +1129,7 @@ class Schedule_EnFuzz(Schedule_Base):
             self.post_round()
 
     def pre_run(self) -> bool:
-        logger.info(f"{self.name}: pre_run")
+        logger.info(f"main 017 - {self.name}: pre_run")
         return True
 
     def run(self):
@@ -1048,7 +1139,7 @@ class Schedule_EnFuzz(Schedule_Base):
         self.post_run()
 
     def post_run(self):
-        logger.info(f"{self.name}: post_run")
+        logger.info(f"main 018 - {self.name}: post_run")
 
 
 class Schedule_Focus(Schedule_Base):
@@ -1063,7 +1154,7 @@ class Schedule_Focus(Schedule_Base):
         if not update_success:
             SLEEP = 10
             logger.info(
-                f'wait for all fuzzer having coverage, sleep {SLEEP} seconds')
+                f'main 019 - wait for all fuzzer having coverage, sleep {SLEEP} seconds')
             sleep(SLEEP)
             global START_TIME
             elasp = time.time() - START_TIME
@@ -1088,7 +1179,7 @@ class Schedule_Focus(Schedule_Base):
             self.post_round()
 
     def pre_run(self) -> bool:
-        logger.info(f"{self.name}: pre_run")
+        logger.info(f"main 020 - {self.name}: pre_run")
         return True
 
     def run(self):
@@ -1098,7 +1189,7 @@ class Schedule_Focus(Schedule_Base):
         self.post_run()
 
     def post_run(self):
-        logger.info(f"{self.name}: post_run")
+        logger.info(f"main 021 - {self.name}: post_run")
 
 
 class Schedule_Autofz(Schedule_Base):
@@ -1109,7 +1200,7 @@ class Schedule_Autofz(Schedule_Base):
     we already see the difference among fuzzer performance
     '''
     def __init__(self,
-                 fuzzers,
+                 fuzzers,tsFuzzers,
                  prep_time=300,
                  focus_time=300,
                  diff_threshold=10):
@@ -1119,7 +1210,7 @@ class Schedule_Autofz(Schedule_Base):
         if we find a winner in the prep phase, we use the remaining time for focus phase
         '''
         # focus time is dynamically determined
-        super().__init__(fuzzers=fuzzers,
+        super().__init__(fuzzers=fuzzers,tsFuzzers=tsFuzzers,
                          prep_time=prep_time,
                          focus_time=focus_time)
         self.name = f'Autofz_{prep_time}_{focus_time}_AIMD_DT{diff_threshold}'
@@ -1139,24 +1230,29 @@ class Schedule_Autofz(Schedule_Base):
         self.dynamic_prep_time_round = 0
         self.dynamic_focus_time_round = 0
 
+    # prepare round setting - sync + init variable
     def pre_round(self):
         self.round_start_time = time.time()
         update_success = maybe_get_fuzzer_info(fuzzers=self.fuzzers)
+        
+
         if not update_success:
             SLEEP = 10
             logger.info(
-                f'wait for all fuzzer having coverage, sleep {SLEEP} seconds')
+                f'main 022 - wait for all fuzzer having coverage, sleep {SLEEP} seconds')
             sleep(SLEEP)
             global START_TIME
             elasp = time.time() - START_TIME
             if elasp > 600:
                 terminate_autofz()
+
         self.prep_time_round = 0
         self.focus_time_round = 0
         self.dynamic_prep_time_round = 0
         self.dynamic_focus_time_round = 0
         self.focused_round = []
         self.has_winner_round = False
+
         return update_success
 
     def one_round(self):
@@ -1169,65 +1265,115 @@ class Schedule_Autofz(Schedule_Base):
             fuzzer_info = empty_fuzzer_info(self.fuzzers)
         else:
             fuzzer_info = get_fuzzer_info(self.fuzzers)
+
         self.before_prep_fuzzer_info = fuzzer_info
         logger.debug(f'before_fuzzer_info: {self.before_prep_fuzzer_info}')
 
         prep_fuzzers = self.fuzzers
         self.prep_fuzzers = prep_fuzzers
 
-        logger.info(f'round {self.round_num} preparation phase')
+        logger.info(f'main 023 - round {self.round_num} preparation phase')
+        previous_bitmap = fuzzer_info['global_bitmap'].count()
+        previous_unique_bug = fuzzer_info['global_unique_bugs']['unique_bugs']
 
-        if PARALLEL:
-            has_winner = self.prep_parallel()
-        else:
-            has_winner = self.prep_round_robin()
+        logger.info(f'main 041 - previous unique bug : {previous_unique_bug}')
+
+        # preparation phase - 3 step
+        # check early exit condition
+        if self.round_num == 1:
+            if PARALLEL:
+                has_winner = self.prep_parallel()
+            else:
+                has_winner = self.prep_round_robin()
+            
+            fuzzer_threshold_sum =0
+            for fuzzer in FUZZERS:
+                fuzzer_threshold_sum += self.tsFuzzers[fuzzer].threshold
+                logger.info(f'main 044 - preparation  end result - fuzzer : { fuzzer }, fuzzer_success : { self.tsFuzzers[fuzzer].S }, fuzzer_fail : { self.tsFuzzers[fuzzer].F }, fuzzer run time_prep : {self.prep_time}, fuzzer threshold : {self.tsFuzzers[fuzzer].threshold}')
+            fuzzer_threshold_av = int(fuzzer_threshold_sum/len(FUZZERS))
+            logger.info(f'main 200 - fuzzer_threshold_av : {fuzzer_threshold_av}')
+            self.diff_threshold = fuzzer_threshold_av
+
+        
+        selected_fuzzers = thompson.selectFuzzer(self.tsFuzzers)
+        logger.info(f'main 024 - selected_fuzzers: {selected_fuzzers}')
+
 
         prep_end_time = time.time()
         fuzzer_info = get_fuzzer_info(self.fuzzers)
         after_prep_fuzzer_info = fuzzer_info
+        
+        if self.round_num == 1 :
+            preparation_bitmap = after_prep_fuzzer_info['global_bitmap'].count()
+            preparation_unique_bug = after_prep_fuzzer_info['global_unique_bugs']['unique_bugs']
+            logger.info(f'main 045 - preparation_bitmap: {preparation_bitmap}, preparation_unique_bug : {preparation_unique_bug}')
 
         logger.debug(f'after_fuzzer_info: {after_prep_fuzzer_info}')
-        bitmap_diff = fuzzer_bitmap_diff(self.fuzzers,
-                                         self.before_prep_fuzzer_info,
-                                         after_prep_fuzzer_info)
-        self.add_bitmap_prep_contribution(prep_fuzzers,
-                                          self.before_prep_fuzzer_info,
-                                          after_prep_fuzzer_info)
 
-        logger.debug(f'BITMAP_DIFF: {bitmap_diff}')
-        logger.debug(f'BITMAP_PREP_CONTRIBUTION: {self.bitmap_contribution}')
+        # no means
+        #bitmap_diff = fuzzer_bitmap_diff(self.fuzzers,  self.before_prep_fuzzer_info, after_prep_fuzzer_info)
+        # no means
+        #self.add_bitmap_prep_contribution(prep_fuzzers, self.before_prep_fuzzer_info, after_prep_fuzzer_info)
+
+        #logger.debug(f'BITMAP_DIFF: {bitmap_diff}')
+        #logger.debug(f'BITMAP_PREP_CONTRIBUTION: {self.bitmap_contribution}')
 
         # NOTE: after bitmap contribution
 
         picked_fuzzers, cpu_assign = [], {}
+        picked_fuzzers, cpu_assign = self.policy_bitmap.calculate_cpu(selected_fuzzers,after_prep_fuzzer_info, JOBS)
+
+
+        # no means
         # NOTE: has winner => delta > threshold
-        if has_winner:
+        #if has_winner:
             # best only
-            picked_fuzzers, cpu_assign = self.policy_bitmap.calculate_cpu(
-                prep_fuzzers, after_prep_fuzzer_info, JOBS)
+        #     picked_fuzzers, cpu_assign = self.policy_bitmap.calculate_cpu(
+        #         prep_fuzzers, after_prep_fuzzer_info, JOBS)
 
             # AIMD threshold additive part
-            self.diff_threshold += self.diff_threshold_base
-        else:
+        #     self.diff_threshold += self.diff_threshold_base
+        # else:
             # resource distibution
-            picked_fuzzers, cpu_assign = self.calculate_cpu_bitmap_intersection(
-                prep_fuzzers, after_prep_fuzzer_info, self.focus_time)
+        #     picked_fuzzers, cpu_assign = self.calculate_cpu_bitmap_intersection(
+        #         prep_fuzzers, after_prep_fuzzer_info, self.focus_time)
 
             # AIMD threshold multiplicative part (div 2)
-            self.diff_threshold *= 0.5
+        #     self.diff_threshold *= 0.5
 
+        # until here
+
+        # check pick before fuzzer picked_time
+        for fuzzer in self.fuzzers:
+             logger.info(f'main 025 - pick before fuzzer: {fuzzer}, picked_time : {self.picked_times[fuzzer]}')
+
+
+        # check picked_fuzzer
         for fuzzer in picked_fuzzers:
             self.picked_times[fuzzer] += 1
+        
+        # check pick after fuzzer picked_time
+        for fuzzer in self.fuzzers:
+            logger.info(f'main 026 - pick after fuzzer: {fuzzer}, picked_time : {self.picked_times[fuzzer]}')
 
         # focus session
         self.cov_before_focus = after_prep_fuzzer_info
 
-        do_sync(self.fuzzers, OUTPUT)
+        # no means
+        # do_sync(self.fuzzers, OUTPUT)
 
-        if has_winner:
-            self.dynamic_focus_time_round = self.prep_time - self.dynamic_prep_time_round + self.focus_time
-        else:
-            self.dynamic_focus_time_round = self.focus_time
+        # reset focus time
+        self.dynamic_focus_time_round = self.focus_time
+
+        logger.info(f'main 027 - prep_time : {self.prep_time}, dynamic_prep_time_round: {self.dynamic_prep_time_round}, focus_time: {self.focus_time}, dynamic_focus_time_round: {self.dynamic_focus_time_round}')
+
+
+
+        # focus time fix 
+        #if has_winner:
+        #    self.dynamic_focus_time_round = self.prep_time - self.dynamic_prep_time_round + self.focus_time
+        #else:
+        #    self.dynamic_focus_time_round = self.focus_time
 
         logger.debug(
             f'prep time: {self.dynamic_prep_time_round}, focus time: {self.dynamic_focus_time_round}'
@@ -1236,30 +1382,68 @@ class Schedule_Autofz(Schedule_Base):
         find_new = False
         focus_start_time = time.time()
 
-        logger.info(f'round {self.round_num} focus phase')
+        logger.info(f'main 028 - round {self.round_num} focus phase')
+
+        # run focus fuzzer
+        find_new = self.focus_cpu_assign(cpu_assign, self.dynamic_focus_time_round)
+
         # NOTE: focus phase
-        if PARALLEL:
-            find_new = self.focus_cpu_assign_parallel(
-                cpu_assign, self.dynamic_focus_time_round)
-        else:
-            logger.debug('scheduling focus session')
-            find_new = self.focus_cpu_assign(cpu_assign,
-                                             self.dynamic_focus_time_round)
+        #if PARALLEL:
+        #    find_new = self.focus_cpu_assign_parallel(
+        #        cpu_assign, self.dynamic_focus_time_round)
+        #else:
+        #    logger.debug('scheduling focus session')
+        #    find_new = self.focus_cpu_assign(cpu_assign,
+        #                                     self.dynamic_focus_time_round)
+        
+        # logger.info(f'find_new: {find_new}')
 
         logger.debug(f'find new is {find_new}')
         focus_end_time = time.time()
-        focus_elasp = focus_end_time - focus_start_time
-        logger.debug(f'focus elasp: {focus_elasp} seconds')
+
+        # no means
+        #focus_elasp = focus_end_time - focus_start_time
+        #logger.debug(f'focus elasp: {focus_elasp} seconds')
 
         self.find_new_round = find_new
 
         after_focus_fuzzer_info = get_fuzzer_info(self.fuzzers)
         logger.debug(f'focused_round: {self.focused_round}')
 
-        assert (self.dynamic_prep_time_round +
-                self.dynamic_focus_time_round) == (self.prep_time +
-                                                   self.focus_time)
+        current_bitmap = after_focus_fuzzer_info['global_bitmap'].count()
+        current_unique_bug = after_focus_fuzzer_info['global_unique_bugs']['unique_bugs']
+        # logger.info(f"after_info : {after_focus_fuzzer_info['bitmap']}")
 
+        # update fuzzer count criteria
+        if self.round_num == 1 :
+            logger.info(f'main 029 - round {self.round_num} end - preparation_bitmap: {preparation_bitmap}, current_bitmap: {current_bitmap}, preparation_unique_bug : { preparation_unique_bug}, current_unique_bug : { current_unique_bug},  diff_threshold: {self.diff_threshold}')
+        else:
+            logger.info(f'main 029 - round {self.round_num} end - previous_bitmap: {previous_bitmap}, current_bitmap: {current_bitmap}, previous_unique_bug : { previous_unique_bug}, current_unique_bug : {current_unique_bug}, diff_threshold: {self.diff_threshold}')
+
+#        if self.round_num == 1:
+#            if current_bitmap - preparation_bitmap > self.diff_threshold or current_unique_bug - preparation_unique_bug > 0:
+#                #thompson.updateFuzzerCount(self.tsFuzzers, selected_fuzzers, 1)
+#                self.diff_threshold += self.diff_threshold_base
+#            else:
+#                #thompson.updateFuzzerCount(self.tsFuzzers, selected_fuzzers, 0)
+#                self.diff_threshold *= 0.5
+#        else:
+#            if current_bitmap - previous_bitmap > self.diff_threshold or current_unique_bug - previous_unique_bug > 0:
+#                #thompson.updateFuzzerCount(self.tsFuzzers, selected_fuzzers, 1)
+#                self.diff_threshold += self.diff_threshold_base
+#            else:
+#                #thompson.updateFuzzerCount(self.tsFuzzers, selected_fuzzers, 0)
+#                self.diff_threshold *= 0.5
+
+        bug_info = after_focus_fuzzer_info['global_unique_bugs']
+        logger.info(f'main 030 - round {self.round_num} end result - bug : {bug_info}')
+
+        for fuzzer in FUZZERS:
+            #self.tsFuzzers[fuzzer].stack += 1
+            logger.info(f'main 031 - round {self.round_num} end result - fuzzer : { fuzzer }, fuzzer_success : { self.tsFuzzers[fuzzer].S }, fuzzer_fail : { self.tsFuzzers[fuzzer].F }, fuzzer run time : {self.tsFuzzers[fuzzer].total_runTime}, fuzzer stack : {self.tsFuzzers[fuzzer].stack}, fuzzer threshold : {self.tsFuzzers[fuzzer].threshold}')
+
+        #assert (self.dynamic_prep_time_round + self.dynamic_focus_time_round) == (self.prep_time + self.focus_time)
+        
         append_log(
             'round', {
                 'round_num':
@@ -1316,8 +1500,8 @@ class Schedule_Autofz(Schedule_Base):
         self.round_num += 1
 
     def pre_run(self) -> bool:
-        logger.info(f"{self.name}: pre_run")
-        logger.info(f'diff_threshold {self.diff_threshold}')
+        logger.info(f"main 032 - {self.name}: pre_run")
+        logger.info(f'main 033 - diff_threshold {self.diff_threshold}')
         self.reset_bitmap_contribution()
         for fuzzer in self.fuzzers:
             self.all_bitmap_contribution[fuzzer] = Bitmap.empty()
@@ -1369,6 +1553,9 @@ def main():
     global PARALLEL
     random.seed()
     ARGS = cli.ArgsParser().parse_args()
+
+    logger.info(f'main 034 - ARGS(user set option) : {ARGS}')
+
     TARGET = ARGS.target
     unsuppored_fuzzers = config['target'][TARGET].get('unsupported', [])
     logger.debug(f'autofz args is {ARGS}')
@@ -1379,6 +1566,7 @@ def main():
     ]
     FUZZERS = available_fuzzers if 'all' in ARGS.fuzzer else ARGS.fuzzer
     logger.debug(f'FUZZERS: {FUZZERS}')
+
     # make things easier
     if ARGS.focus_one:
         FUZZERS = [ARGS.focus_one]
@@ -1417,7 +1605,7 @@ def main():
     timeout = ARGS.timeout
     PARALLEL = ARGS.parallel
 
-    coverage.thread_run_global(TARGET,
+    result = coverage.thread_run_global(TARGET,
                                FUZZERS,
                                OUTPUT,
                                ARGS.timeout,
@@ -1426,16 +1614,25 @@ def main():
                                empty_seed=ARGS.empty_seed,
                                crash_mode=ARGS.crash_mode,
                                input_only=False)
+
     # wait for seed evaluated
     START_TIME = time.time()
 
     # setup cgroup
     init_cgroup()
 
+    # create thompson sampling fuzzer variable
+    tsFuzzers = {}
+
+    # init fuzzer - success count and fail count
+    for fuzzer in FUZZERS:
+        tsFuzzers[fuzzer] = thompson.fuzzer()
+        logger.info(f'main 035 - init fuzzer : { fuzzer }, fuzzer_success : { tsFuzzers[fuzzer].S }, fuzzer_fail : { tsFuzzers[fuzzer].F } total_run_time : {tsFuzzers[fuzzer].total_runTime} )')
+
     # setup fuzzers
     for fuzzer in FUZZERS:
         if ARGS.focus_one and fuzzer != ARGS.focus_one: continue
-        logger.info(f'warm up {fuzzer}')
+        logger.info(f'main 036 - warm up {fuzzer}')
         CPU_ASSIGN[fuzzer] = 0
         if ARGS.enfuzz:
             # handle speical case for enfuzz, which will only use 1 CPU per fuzzer
@@ -1474,7 +1671,7 @@ def main():
                 logger.critical('fuzzers start up error')
                 terminate_autofz()
             logger.info(
-                f'fuzzer not {fuzzer} ready, sleep 10 seconds to warm up')
+                f'main 037 - fuzzer not {fuzzer} ready, sleep 10 seconds to warm up')
             time.sleep(2)
 
         # pause current fuzzer and wait others to start up
@@ -1490,6 +1687,9 @@ def main():
     thread_fuzzer_log = threading.Thread(target=thread_update_fuzzer_log,
                                          kwargs={'fuzzers': FUZZERS},
                                          daemon=True)
+
+
+
     thread_fuzzer_log.start()
 
     thread_health = threading.Thread(target=thread_health_check, daemon=True)
@@ -1511,7 +1711,7 @@ def main():
     # autofz mode
     else:
         diff_threshold = ARGS.diff_threshold
-        scheduler = Schedule_Autofz(fuzzers=FUZZERS,
+        scheduler = Schedule_Autofz(fuzzers=FUZZERS,tsFuzzers=tsFuzzers,
                                       prep_time=PREP_TIME,
                                       focus_time=FOCUS_TIME,
                                       diff_threshold=diff_threshold)
@@ -1519,7 +1719,7 @@ def main():
 
     assert scheduler
     assert algorithm
-    logger.info(f'algorthm {algorithm}')
+
     LOG['algorithm'] = algorithm
 
     RUNNING = True
@@ -1528,18 +1728,20 @@ def main():
     thread_log.start()
 
     # Timer to stop all fuzzers
+    logger.info(f'main 038 - algorithm : {algorithm}, scheduler: {scheduler}')
+
     scheduler.run()
 
     finish_path = os.path.join(OUTPUT, 'finish')
     pathlib.Path(finish_path).touch(mode=0o666, exist_ok=True)
     while not is_end_global():
-        logger.info('sleep to wait final coverage')
+        logger.info('main 039 - sleep to wait final coverage')
         time.sleep(300)
 
     LOG['end_time'] = time.time()
 
     write_log()
-    logger.info('autofz terminating')
+    logger.info('main 040 - autofz terminating')
     cleanup(0)
 
 
