@@ -2,7 +2,7 @@
 version: '2.4'
 services:
   autofz:
-    image: "autofz"
+    image: "rcfuzz"
     privileged: true
     logging:
        driver: "json-file"

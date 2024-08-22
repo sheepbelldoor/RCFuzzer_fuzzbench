@@ -12,4 +12,4 @@ CID=$(basename ${CPU_CGROUP_PATH})
 
 set -x
 # create subgroup
-cgcreate -t autofz -a autofz -g cpu:/autofz
+cgcreate -t rcfuzz -a rcfuzz -g cpu:/rcfuzz

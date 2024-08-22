@@ -1,9 +1,9 @@
 #!/bin/bash -e
 SCRIPT_DIR=$(dirname $(realpath $0))
-IMAGE_PREFIX=autofz
-BENCHMARK_PREFIX=autofz_bench
+IMAGE_PREFIX=rcfuzz
+BENCHMARK_PREFIX=rcfuzz_bench
 
-USER=autofz
+USER=rcfuzz
 
 # hard code UID and GID to bypass docker volumn permission issue
 # you might need to change your own UID/GID to 2000
@@ -27,7 +27,7 @@ if [ -e $SCRIPT_DIR/Dockerfile ]; then
             --build-arg USER=$USER \
             --build-arg UID=$_UID \
             --build-arg GID=$GID \
-            -t autofz \
+            -t rcfuzz \
             -f $SCRIPT_DIR/Dockerfile \
             "${build_args[@]}" \
             .
