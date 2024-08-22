@@ -5,7 +5,7 @@ import time
 
 import peewee
 import psutil
-from autofz import config as Config
+from rcfuzz import config as Config
 
 from .db import AFLModel, ControllerModel, db_proxy
 from .fuzzer import FuzzerDriverException, PSFuzzer
@@ -649,7 +649,7 @@ class AFLController(AFLBasedController):
         super().__init__(AFL, 'afl', seed, output, group, program, argument,
                          cgroup_path)
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-afl.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-afl.db'))
 
 
 class AFLFASTController(AFLBasedController):
@@ -658,7 +658,7 @@ class AFLFASTController(AFLBasedController):
         super().__init__(AFLFAST, 'aflfast', seed, output, group, program,
                          argument, cgroup_path)
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-aflfast.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-aflfast.db'))
 
 
 class MOPTController(AFLBasedController):
@@ -667,7 +667,7 @@ class MOPTController(AFLBasedController):
         super().__init__(MOPT, 'mopt', seed, output, group, program, argument,
                          cgroup_path)
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-mopt.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-mopt.db'))
 
 
 class FAIRFUZZController(AFLBasedController):
@@ -676,7 +676,7 @@ class FAIRFUZZController(AFLBasedController):
         super().__init__(FAIRFUZZ, 'fairfuzz', seed, output, group, program,
                          argument, cgroup_path)
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-fairfuzz.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-fairfuzz.db'))
 
 
 class LAFINTELController(AFLBasedController):
@@ -685,7 +685,7 @@ class LAFINTELController(AFLBasedController):
         super().__init__(LAFINTEL, 'lafintel', seed, output, group, program,
                          argument, cgroup_path)
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-lafintel.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-lafintel.db'))
 
 
 class LEARNAFLController(AFLBasedController):
@@ -694,7 +694,7 @@ class LEARNAFLController(AFLBasedController):
         super().__init__(LEARNAFL, 'learnafl', seed, output, group, program,
                          argument, cgroup_path)
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-learnafl.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-learnafl.db'))
 
 
 class REDQUEENController(AFLBasedController):
@@ -703,7 +703,7 @@ class REDQUEENController(AFLBasedController):
         super().__init__(REDQUEEN, 'redqueen', seed, output, group, program,
                          argument, cgroup_path)
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-redqueen.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-redqueen.db'))
 
 
 class RADAMSAController(AFLBasedController):
@@ -712,4 +712,4 @@ class RADAMSAController(AFLBasedController):
         super().__init__(RADAMSA, 'radamsa', seed, output, group, program,
                          argument, cgroup_path)
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-radamsa.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-radamsa.db'))

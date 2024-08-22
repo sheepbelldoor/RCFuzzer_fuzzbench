@@ -10,7 +10,7 @@ import sys
 if __package__ is None:
     sys.path.append(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-    __package__ = "autofz"
+    __package__ = "rcfuzz"
 
 from .mytype import Fuzzer, FuzzerType
 

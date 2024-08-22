@@ -5,7 +5,7 @@ import time
 
 import peewee
 # from .. import config as Config
-from autofz import config as Config
+from rcfuzz import config as Config
 
 from . import afl
 from .controller import Controller
@@ -28,7 +28,7 @@ class Angora(PSFuzzer):
         '''
         fuzzer_id used to distinguish different slaves
         '''
-        debug_file=os.path.realpath(os.path.join(output,'..','..','autofz_angora.log'))
+        debug_file=os.path.realpath(os.path.join(output,'..','..','rcfuzz_angora.log'))
         debug = False
         super().__init__(pid, debug=debug, debug_file=debug_file)
         self.seed = seed
@@ -118,7 +118,7 @@ class Angora(PSFuzzer):
 class ANGORAController(Controller):
     def __init__(self, seed, output, group, program, argument, thread=1, cgroup_path=''):
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-angora.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-angora.db'))
         self.name = 'angora'
         self.seed = seed
         self.output = output

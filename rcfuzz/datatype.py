@@ -6,7 +6,7 @@ import time
 import numpy as np
 from bitarray import bitarray
 
-logger = logging.getLogger('autofz.datatype')
+logger = logging.getLogger('rcfuzz.datatype')
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 

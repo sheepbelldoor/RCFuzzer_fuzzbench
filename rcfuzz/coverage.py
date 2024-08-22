@@ -16,7 +16,7 @@ from .datatype import Bitmap
 
 config = Config.CONFIG
 
-logger = logging.getLogger('autofz.coverage')
+logger = logging.getLogger('rcfuzz.coverage')
 
 EVALUTOR_THREAD = None
 

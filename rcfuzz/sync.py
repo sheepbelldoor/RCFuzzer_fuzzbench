@@ -2,7 +2,7 @@
 '''
 sync current inputs from one fuzzer to another fuzzer
 
-1. create subdirectory autofz in each fuzzer directory following AFL structure
+1. create subdirectory rcfuzz in each fuzzer directory following AFL structure
 2. collect inputs from different fuzzers
 3. deduplicate
 4. copy inputs to directory in first step
@@ -25,7 +25,7 @@ from .mytype import Fuzzer, Fuzzers, FuzzerType
 
 config = Config.CONFIG
 
-logger = logging.getLogger('autofz.sync')
+logger = logging.getLogger('rcfuzz.sync')
 
 index = nested_dict()
 
@@ -75,14 +75,14 @@ global_processed_checksum = set()
 processed_checksum = nested_dict()
 
 
-def init_dir(autofz_dir: Path) -> None:
+def init_dir(rcfuzz_dir: Path) -> None:
     '''
     create afl-compatible directory structure
     '''
-    os.makedirs(autofz_dir, exist_ok=True)
-    crash_dir = os.path.join(autofz_dir, 'crashes')
-    hang_dir = os.path.join(autofz_dir, 'hangs')
-    queue_dir = os.path.join(autofz_dir, 'queue')
+    os.makedirs(rcfuzz_dir, exist_ok=True)
+    crash_dir = os.path.join(rcfuzz_dir, 'crashes')
+    hang_dir = os.path.join(rcfuzz_dir, 'hangs')
+    queue_dir = os.path.join(rcfuzz_dir, 'queue')
     for d in [crash_dir, hang_dir, queue_dir]:
         os.makedirs(d, exist_ok=True)
 
@@ -92,15 +92,15 @@ def init(target: str, fuzzers: Fuzzers, host_root_dir: Path) -> None:
         if fuzzer not in processed_checksum:
             processed_checksum[fuzzer] = set()
         fuzzer_root_dir = host_root_dir / target / fuzzer
-        autofz_dir = fuzzer_root_dir / 'autofz'
-        init_dir(autofz_dir)
+        rcfuzz_dir = fuzzer_root_dir / 'rcfuzz'
+        init_dir(rcfuzz_dir)
 
 
 def import_test_case_dirs(fuzzer_root_dir: Path, input_dir: str) -> List[Path]:
     ret: List[Path] = []
     for queue_dir in pathlib.Path(fuzzer_root_dir).rglob('**/%s' % input_dir):
         queue_dir_s = str(queue_dir)
-        if utils.is_dir(queue_dir_s) and f'autofz/{input_dir}' not in str(
+        if utils.is_dir(queue_dir_s) and f'rcfuzz/{input_dir}' not in str(
                 queue_dir):
             logger.debug(queue_dir_s)
             ret.append(Path(queue_dir_s))
@@ -132,8 +132,8 @@ def new_afl_filename(fuzzer):
 def sync_test_case(target, fuzzer, host_root_dir, testcase):
     fuzzer_config = config['fuzzer'][fuzzer]
     fuzzer_root_dir = os.path.join(host_root_dir, target, fuzzer)
-    autofz_dir = os.path.join(fuzzer_root_dir, 'autofz')
-    queue_dir = os.path.join(autofz_dir, 'queue')
+    rcfuzz_dir = os.path.join(fuzzer_root_dir, 'rcfuzz')
+    queue_dir = os.path.join(rcfuzz_dir, 'queue')
     # logger.debug(f'copy {testcase.filename} to {queue_dir}')
     new_name = new_afl_filename(fuzzer)
     new_filename = os.path.join(queue_dir, new_name)
@@ -169,7 +169,7 @@ def sync2(target: str, fuzzers: Fuzzers, host_root_dir: Path):
             # print(f'{fuzzer} subdir')
             for subdir in fuzzer_root_dir.iterdir():
                 if subdir.is_dir():
-                    if subdir.parts[-1] == 'autofz': continue
+                    if subdir.parts[-1] == 'rcfuzz': continue
                     watcher.init_watcher(fuzzer, subdir)
         else:
             watcher.init_watcher(fuzzer, fuzzer_root_dir)

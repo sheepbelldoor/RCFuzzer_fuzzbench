@@ -8,7 +8,7 @@ import time
 
 import peewee
 # from .. import config as Config
-from autofz import config as Config
+from rcfuzz import config as Config
 
 from . import afl
 from .controller import Controller
@@ -111,7 +111,7 @@ class QSYMController(Controller):
                  thread,
                  cgroup_path=''):
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-qsym.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-qsym.db'))
         self.name = 'qsym'
         self.seed = seed
         self.output = output

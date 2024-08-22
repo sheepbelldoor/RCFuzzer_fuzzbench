@@ -10,7 +10,7 @@ from . import config as Config
 
 config = Config.CONFIG
 
-logger = logging.getLogger('autofz.policy')
+logger = logging.getLogger('rcfuzz.policy')
 
 
 class Policy(object):
@@ -46,7 +46,7 @@ class BitmapPolicy(Policy):
                                             fuzzers_bitmap)
         array_bitmap = list(fuzzers_bitmap_count.items())
         sorted_bitmap = sorted(array_bitmap, key=lambda t: t[1], reverse=True)
-        prev_coverage = 2**32
+        #prev_coverage = 2**32
         now_rank = -1
         now_rank_num = 0
         rank = {}
@@ -54,14 +54,21 @@ class BitmapPolicy(Policy):
         ordered_fuzzers = []
         for f, cov in sorted_bitmap:
             # NOTE: handle repetitive element
+
             ordered_fuzzers.append(f)
             val = cov
-            if prev_coverage > val:
-                now_rank_num = 1
-                now_rank += 1
-            elif prev_coverage == val:
-                now_rank_num += 1
-            rank[f] = now_rank
+            now_rank_num +=1
+            now_rank = 0
+
+            #if prev_coverage > val:
+            #    now_rank_num = 1
+            #    now_rank += 1
+            #elif prev_coverage == val:
+            #    now_rank_num += 1
+            #rank[f] = now_rank
+
+            logger.info(f'policy f: {f}, val : {val}, now_rank : {now_rank}, now_rank_num : {now_rank_num}')
+
             rank_num[now_rank] = now_rank_num
             prev_coverage = val
         return rank, rank_num, ordered_fuzzers

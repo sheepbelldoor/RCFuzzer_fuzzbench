@@ -101,7 +101,6 @@ class ArgsParser(Tap):
                           default=False)
 
 
-# random path to allow multiple exeuction of autofz
 COVERAGE_LOCK_PATH: str = os.path.join(
     '/tmp', 'coverage_lock_' + utils.get_random_string(10))
 COVERAGE_LOCK = filelock.FileLock(COVERAGE_LOCK_PATH, timeout=100)
@@ -142,7 +141,7 @@ crash_set_trace3: Dict[Fuzzer, Set] = {}
 
 hashmap: Dict[str, str] = dict()
 
-logger = logging.getLogger('autofz.evaluator')
+logger = logging.getLogger('rcfuzz.evaluator')
 
 
 def json_dumper(obj):
@@ -198,11 +197,9 @@ class AFLBitmap:
             self.bitmap = np.array(b)
             del b
 
-    # counts visited edges in bitmap
     def count(self):
         return np.sum(self.bitmap)
 
-    # use other bitmap as baseline, what are the new branches in our bitmap?
     def delta(self, other):
         if len(other.bitmap) > 0:
             self.initialize_bitmap_if_necessary(len(other.bitmap))
@@ -215,11 +212,8 @@ class AFLBitmap:
     def reset(self):
         self.bitmap = np.array(bytearray())
 
-    # use other bitmap as baseline,, how many new branches are in our bitmap?
     def delta_count(self, other):
         return np.sum(self.delta(other).bitmap)
-
-    # update bitmap
     def update(self, other):
         if len(other.bitmap) == 0:
             return
@@ -249,13 +243,6 @@ class AFLBitmap:
 class AFLForkserverExecuter(object):
     def __init__(self, binary, arguments):
         script_path = os.path.dirname(os.path.realpath(__file__))
-
-        # if not check_afl():
-        #     raise Exception(
-        #         "AFL is not configured, please execute:\n"
-        #         "sudo bash -c 'echo core >/proc/sys/kernel/core_pattern; cd /sys/devices/system/cpu; echo performance | tee cpu*/cpufreq/scaling_governor'"
-        #     )
-
         self.fuzzed_binary = binary
         self.binary = self.fuzzed_binary
         self.arguments = arguments
@@ -273,10 +260,8 @@ class AFLForkserverExecuter(object):
         if '@@' in self.arguments:
             self.arguments[self.arguments.index('@@')] = self.input_file_path
         self.arguments.insert(0, os.path.abspath(self.binary))
-        # in QEMU mode, we need to do some special stuff
         self.coverage = AFLBitmap()
 
-        # https://github.com/albertz/playground/blob/master/shared_mem.py
         self.aflforkserverlib = ctypes.cdll.LoadLibrary(
             os.path.abspath(os.path.join(self.script_path,
                                          "aflforkserver.so")))
@@ -284,77 +269,61 @@ class AFLForkserverExecuter(object):
         LP_c_char = ctypes.POINTER(ctypes.c_char)
         LP_LP_c_char = ctypes.POINTER(LP_c_char)
 
-        # int shmget(key_t key, size_t size, int shmflg);
-
-        # void setup(char* out_file_path)
         self.setup = self.aflforkserverlib.setup
         self.setup.restype = None
         self.setup.argtypes = (ctypes.c_char_p, ctypes.c_int)
 
-        # void init_target(char *argv[], char* target)
         self.init_target = self.aflforkserverlib.init_target
         self.init_target.restype = ctypes.c_int
         self.init_target.argtypes = (ctypes.POINTER(ctypes.c_char_p),
                                      ctypes.POINTER(ctypes.c_char))
 
-        # int run_target(char **argv)
-        # returns non-zero if error happened
         self.run_target = self.aflforkserverlib.run_target
         self.run_target.restype = ctypes.c_int
         self.run_target.argtypes = (ctypes.POINTER(ctypes.c_char_p), )
 
-        # int check_new_coverage()
         self.check_new_coverage = self.aflforkserverlib.check_new_coverage
         self.check_new_coverage.restype = ctypes.c_int
         self.check_new_coverage.argtypes = None
 
-        # static void write_to_testcase(void* mem, u32 len)
         self.write_to_testcase = self.aflforkserverlib.write_to_testcase
         self.write_to_testcase.restype = None
         self.write_to_testcase.argtypes = (ctypes.POINTER(ctypes.c_char),
                                            ctypes.c_int)
 
-        # int get_map_size()
         self.get_map_size = self.aflforkserverlib.get_map_size
         self.get_map_size.restype = ctypes.c_int
         self.get_map_size.argtypes: Any = None
         self.MAP_SIZE = self.get_map_size()
 
-        # uint8_t* get_bitmap()
         self._get_bitmap = self.aflforkserverlib.get_bitmap
         self._get_bitmap.restype = ctypes.POINTER(ctypes.c_uint8 *
                                                   self.MAP_SIZE)
         self._get_bitmap.argtypes = None
 
-        # int has_exec_failed()
         self.has_exec_failed = self.aflforkserverlib.has_exec_failed
         self.has_exec_failed.restype = ctypes.c_int
         self.has_exec_failed.argtypes = None
 
-        # int cleanup()
         self.afl_cleanup = self.aflforkserverlib.cleanup
         self.afl_cleanup.restype = None
         self.afl_cleanup.argtypes = None
 
-        # void reset_bitmap()
         self._reset = self.aflforkserverlib.reset_bitmap
         self._reset.restype = None
         self._reset.argtypes = None
 
-        # set up aflforkserver
-        #(ctypes.c_char * len(self.input_file_path.encode('ascii')))(*self.input_file_path.encode('ascii'))
-        # normally .cur_input
         self.input_file_path_c = (self.input_file_path +
                                   "\x00").encode('ascii')
         self.setup(self.input_file_path_c, int(False))
         execve_arguments = [s.encode('ascii') for s in self.arguments] + [
             None
-        ]  # execve needs this format [param1, param2, NULL]
+        ] 
         self.arguments_c = (ctypes.c_char_p *
                             len(execve_arguments))(*execve_arguments)
         binary = (self.binary + "\x00").encode(
             'ascii'
-        )  # I'm sure there is some ctypes-proper way to do this ... @TODO
+        ) 
         self.binary_c = (ctypes.c_char * len(binary))(*binary)
         exec_failed = self.init_target(self.arguments_c, self.binary_c)
         if exec_failed > 0:
@@ -393,7 +362,6 @@ class AFLForkserverExecuter(object):
             os.remove(self.input_file_path)
         except:
             pass
-        # self.afl_cleanup()
         self.coverage.reset()
 
     def __del__(self):
@@ -479,7 +447,6 @@ class AFLForkserverProcess(object):
         self.p = Process(target=self.process_loop, daemon=True)
         self.p.start()
 
-    # recv with timeout
     def _parent_recv(self):
         if self.parent.poll(timeout=1000):
             return self.parent.recv()
@@ -1196,7 +1163,7 @@ def get_fuzzer_files(fuzzer: Fuzzer) -> Tuple[List[Path], List[Path]]:
     if utils.fuzzer_has_subdir(FuzzerType(fuzzer)):
         for subdir in fuzzer_root_dir.iterdir():
             if subdir.is_dir():
-                if subdir.parts[-1] == 'autofz': continue
+                if subdir.parts[-1] == 'rcfuzz': continue
                 watcher.init_watcher(fuzzer, subdir)
     else:
         watcher.init_watcher(fuzzer, fuzzer_root_dir)

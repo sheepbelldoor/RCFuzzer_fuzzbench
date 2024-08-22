@@ -10,15 +10,15 @@ import sys
 if __package__ is None:
     sys.path.append(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-    __package__ = "autofz"
+    __package__ = "rcfuzz"
 
 from .common import IS_DEBUG
 from . import utils
 
-logger = logging.getLogger('autofz.check_log')
+logger = logging.getLogger('rcfuzz.check_log')
 
 
-def is_autofz_log(log_file):
+def is_rcfuzz_log(log_file):
     log = None
     try:
         with open(log_file, 'r') as f:
@@ -26,15 +26,15 @@ def is_autofz_log(log_file):
     except json.decoder.JSONDecodeError:
         logger.error(f'{log_file} json decode error')
         return False
-    if 'autofz_args' in log:
+    if 'rcfuzz_args' in log:
         return True
     return False
 
 
 def get_timeout_from_log(log):
-    autofz_args = log['autofz_args']
-    autofz_config = log['autofz_config']
-    timeout = autofz_args['timeout']
+    rcfuzz_args = log['rcfuzz_args']
+    rcfuzz_config = log['rcfuzz_config']
+    timeout = rcfuzz_args['timeout']
     seconds = utils.parse_delta(timeout).total_seconds()
     return seconds
 
@@ -71,7 +71,7 @@ def check_log_files(directory, timeout):
     timeout_seconds = utils.parse_delta(timeout).total_seconds()
     log_files = glob.glob(f'{directory}/**/*.json', recursive=True)
     for log_file in log_files:
-        is_log = is_autofz_log(log_file)
+        is_log = is_rcfuzz_log(log_file)
         logger.debug(f'{log_file}, {is_log}')
         if is_log: check_log_one(log_file, timeout)
 
@@ -93,10 +93,10 @@ if __name__ == '__main__':
         directory = os.path.realpath(args.directory)
         check_log_files(directory=directory, timeout=args.timeout)
     elif args.log_file:
-        if is_autofz_log(args.log_file):
+        if is_rcfuzz_log(args.log_file):
             ret = check_log_one(log_file=args.log_file, timeout=args.timeout)
         else:
-            logger.error('{args.log_file} is not autofz\'s log')
+            logger.error('{args.log_file} is not rcfuzz\'s log')
             exit(1)
         if ret:
             exit(0)

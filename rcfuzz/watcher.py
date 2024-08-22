@@ -24,7 +24,7 @@ from watchdog.observers import Observer
 from . import utils
 from .mytype import Fuzzer, FuzzerType, SeedType, WatcherConfig
 
-logger = logging.getLogger('autofz.watcher')
+logger = logging.getLogger('rcfuzz.watcher')
 
 ARGS = None
 
@@ -379,7 +379,7 @@ def parse_fuzzer_dir_to_group_watch_type(fuzzer_dir: Path) -> FuzzerType:
 
     last_dir = parts[-1]
     assert last_dir
-    assert last_dir != 'autofz'
+    assert last_dir != 'rcfuzz'
     fuzzer_type: FuzzerType
     if fuzzer == FuzzerType.QSYM:
         if last_dir == 'qsym':

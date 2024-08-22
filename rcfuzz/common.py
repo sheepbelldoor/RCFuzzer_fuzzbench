@@ -10,7 +10,7 @@ import coloredlogs
 if not __package__:
     sys.path.append(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-    __package__ = "autofz"
+    __package__ = "rcfuzz"
 
 
 def nested_dict():
@@ -45,7 +45,7 @@ IS_DEBUG = False
 
 IS_PROFILE = 'PROFILE' in os.environ
 
-logger = logging.getLogger('autofz')
+logger = logging.getLogger('rcfuzz')
 
 if 'DEBUG' in os.environ:
     coloredlogs.install(level=logging.DEBUG,

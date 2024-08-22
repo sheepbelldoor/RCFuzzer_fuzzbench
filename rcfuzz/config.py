@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-config file for autofz
+config file for rcfuzz
 '''
 import os
 import sys
@@ -11,7 +11,7 @@ from typing import Dict
 if not __package__:
     sys.path.append(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-    __package__ = "autofz"
+    __package__ = "rcfuzz"
 
 INPUT_DIR = 'queue'
 CRASH_DIR = 'crashes'
@@ -28,8 +28,8 @@ CONFIG: Dict = {
     },
     # unused now
     'docker': {
-        'root_dir': '/work/autofz',
-        'network': 'autofz'
+        'root_dir': '/work/rcfuzz',
+        'network': 'rcfuzz'
     },
     # binary directories for AFL-compiled binaries
     # justafl is used to get AFL bitmap
@@ -147,7 +147,7 @@ CONFIG: Dict = {
                 'default': '@@',
             },
             # fuzzers that do not support this target.
-            # autofz will do some sanity check when started.
+            # rcfuzz will do some sanity check when started.
             'unsupported': ['libfuzzer']
         },
         'gdk-pixbuf-pixdata': {

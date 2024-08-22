@@ -7,7 +7,7 @@ from .common import nested_dict
 
 config = Config.CONFIG
 
-logger = logging.getLogger('autofz.fuzzing')
+logger = logging.getLogger('rcfuzz.fuzzing')
 
 log = nested_dict()
 

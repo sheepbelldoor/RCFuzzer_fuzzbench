@@ -4,7 +4,7 @@ import sys
 
 import peewee
 # from .. import config as Config
-from autofz import config as Config
+from rcfuzz import config as Config
 
 from .controller import Controller
 from .db import ControllerModel, LibFuzzerModel, db_proxy
@@ -52,7 +52,7 @@ class LibFuzzer(PSFuzzer):
     def pre_run(self):
         crash_dir = os.path.join(self.output, 'crashes')
         queue_dir = os.path.join(self.output, 'queue')
-        sync_dir = os.path.join(self.output, 'autofz')
+        sync_dir = os.path.join(self.output, 'rcfuzz')
         os.makedirs(crash_dir, exist_ok=True)
         os.makedirs(queue_dir, exist_ok=True)
         os.makedirs(sync_dir, exist_ok=True)
@@ -67,7 +67,7 @@ class LibFuzzer(PSFuzzer):
         self.check()
         crash_dir = os.path.join(self.output, 'crashes')
         queue_dir = os.path.join(self.output, 'queue')
-        sync_dir = os.path.join(self.output, 'autofz')
+        sync_dir = os.path.join(self.output, 'rcfuzz')
         args = []
         if self.cgroup_path:
             args += ['cgexec', '-g', f'cpu:{self.cgroup_path}']
@@ -91,7 +91,7 @@ class LIBFUZZERController(Controller):
                  thread=1,
                  cgroup_path=''):
         self.db = peewee.SqliteDatabase(
-            os.path.join(Config.DATABASE_DIR, 'autofz-libfuzzer.db'))
+            os.path.join(Config.DATABASE_DIR, 'rcfuzz-libfuzzer.db'))
         self.name = 'libfuzzer'
         self.seed = seed
         self.output = output
