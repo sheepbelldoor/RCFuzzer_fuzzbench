@@ -5,7 +5,7 @@ FROM $FUZZER_PREFIX/lafintel
 
 RUN mkdir /d
 
-COPY source/ /autofz_bench
+COPY source/ /rcfuzz_bench
 
 COPY lafintel/build_all.sh /
 

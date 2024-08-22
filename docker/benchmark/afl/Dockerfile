@@ -5,7 +5,7 @@ FROM $FUZZER_PREFIX/afl
 
 RUN mkdir /d
 
-COPY source/ /autofz_bench
+COPY source/ /rcfuzz_bench
 
 COPY afl/build_all.sh /
 
@@ -15,4 +15,4 @@ COPY --from=bench_fts /d/p/ /d/p/
 
 COPY seeds/ /seeds
 
-RUN find /autofz_bench -type d -name ".git" | xargs rm -rf
+RUN find /rcfuzz_bench -type d -name ".git" | xargs rm -rf

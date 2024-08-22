@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FTS_DIR=/autofz_bench/fuzzer-test-suite
+FTS_DIR=/rcfuzz_bench/fuzzer-test-suite
 
 targets=(
     boringssl-2016-02-12
@@ -29,12 +29,12 @@ targets=(
     wpantund-2018-02-27
 )
 mkdir -p /d/p/justafl /d/p/aflasan /d/p/normal /d/p/cov
-BUILD_DIR=/autofz_bench/fuzzer-test-suite-build
-mkdir -p $BUILD_DIR /autofz_bench/fuzzer-test-suite-seeds
+BUILD_DIR=/rcfuzz_bench/fuzzer-test-suite-build
+mkdir -p $BUILD_DIR /rcfuzz_bench/fuzzer-test-suite-seeds
 
 cd $BUILD_DIR
 
-FTS_DIR=/autofz_bench/fuzzer-test-suite
+FTS_DIR=/rcfuzz_bench/fuzzer-test-suite
 
 JOBS="-l$(nproc)" # make -j
 export JOBS

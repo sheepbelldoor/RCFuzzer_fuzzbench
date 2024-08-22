@@ -3,7 +3,7 @@ FROM $FUZZER_PREFIX/base
 
 RUN mkdir /d
 
-COPY source/ /autofz_bench
+COPY source/ /rcfuzz_bench
 
 COPY gcc/build_all.sh /
 

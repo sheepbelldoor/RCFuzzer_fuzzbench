@@ -34,12 +34,12 @@ export RUSTUP_HOME=/usr/local/rustup \
     PATH=/clang+llvm/bin:/usr/local/cargo/bin:/fuzzer/angora/bin/:/go/bin:$PATH \
     LD_LIBRARY_PATH=/clang+llvm/lib:$LD_LIBRARY_PATH
 
-BUILD_DIR=/autofz_bench/fuzzer-test-suite-build
-mkdir -p $BUILD_DIR /autofz_bench/fuzzer-test-suite-seeds
+BUILD_DIR=/rcfuzz_bench/fuzzer-test-suite-build
+mkdir -p $BUILD_DIR /rcfuzz_bench/fuzzer-test-suite-seeds
 
 cd $BUILD_DIR
 
-FTS_DIR=/autofz_bench/fuzzer-test-suite-angora
+FTS_DIR=/rcfuzz_bench/fuzzer-test-suite-angora
 
 JOBS=" " # make -j
 export JOBS

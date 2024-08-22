@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-FTS_DIR=/autofz_bench/fuzzer-test-suite-aflplusplus
+FTS_DIR=/rcfuzz_bench/fuzzer-test-suite-aflplusplus
 
 targets=(
     boringssl-2016-02-12
@@ -29,8 +29,8 @@ targets=(
     wpantund-2018-02-27
 )
 mkdir -p /d/p/lafintel
-BUILD_DIR=/autofz_bench/fuzzer-test-suite-build
-mkdir -p $BUILD_DIR /autofz_bench/fuzzer-test-suite-seeds
+BUILD_DIR=/rcfuzz_bench/fuzzer-test-suite-build
+mkdir -p $BUILD_DIR /rcfuzz_bench/fuzzer-test-suite-seeds
 
 cd $BUILD_DIR
 

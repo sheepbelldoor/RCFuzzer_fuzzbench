@@ -3,9 +3,9 @@ FROM $FUZZER_PREFIX/afl
 
 RUN mkdir /d
 
-COPY source/ /autofz_bench
+COPY source/ /rcfuzz_bench
 
-RUN cd /autofz_bench/fuzzer-test-suite
+RUN cd /rcfuzz_bench/fuzzer-test-suite
 
 COPY fuzzer-test-suite/build_all.sh /
 

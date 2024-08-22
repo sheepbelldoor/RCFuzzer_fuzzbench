@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-FTS_DIR=/autofz_bench/fuzzer-test-suite
+FTS_DIR=/rcfuzz_bench/fuzzer-test-suite
 
 targets=(
     boringssl-2016-02-12
@@ -29,12 +29,12 @@ targets=(
     wpantund-2018-02-27
 )
 mkdir -p /d/p/libfuzzer
-BUILD_DIR=/autofz_bench/fuzzer-test-suite-build
+BUILD_DIR=/rcfuzz_bench/fuzzer-test-suite-build
 mkdir -p $BUILD_DIR
 
 cd $BUILD_DIR
 
-FTS_DIR=/autofz_bench/fuzzer-test-suite
+FTS_DIR=/rcfuzz_bench/fuzzer-test-suite
 
 JOBS=" " # make -j
 export JOBS

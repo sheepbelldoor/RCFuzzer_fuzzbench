@@ -7,7 +7,7 @@ FROM $FUZZER_PREFIX/angora
 RUN mkdir -p /d/p/angora
 
 COPY --from=bench_gcc /d/p/normal /d/p/normal
-COPY source/ /autofz_bench
+COPY source/ /rcfuzz_bench
 
 COPY angora/abilist.txt /tmp/abilist_ffmpeg.txt
 
@@ -19,4 +19,4 @@ COPY --from=bench_fts_angora /d/p/ /d/p/
 
 COPY seeds/ /seeds
 
-RUN find /autofz_bench -type d -name ".git" | xargs rm -rf
+RUN find /rcfuzz_bench -type d -name ".git" | xargs rm -rf

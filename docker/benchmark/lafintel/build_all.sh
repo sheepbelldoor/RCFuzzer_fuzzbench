@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-cd /autofz_bench/unibench && \
+cd /rcfuzz_bench/unibench && \
     mkdir mp3gain-1.5.2 && cd mp3gain-1.5.2 && mv ../mp3gain-1.5.2.zip ./ && unzip -q mp3gain-1.5.2.zip && rm mp3gain-1.5.2.zip && cd .. &&\
     ls *.zip|xargs -i unzip -q '{}' &&\
     ls *.tar.gz|xargs -i tar xf '{}' &&\
@@ -46,14 +46,14 @@ do
 done
 
 {
- cd /autofz_bench/unibench/exiv2-0.26 && cmake -DEXIV2_ENABLE_SHARED=OFF . && \
+ cd /rcfuzz_bench/unibench/exiv2-0.26 && cmake -DEXIV2_ENABLE_SHARED=OFF . && \
      make clean && \
      make -j && cp bin/exiv2 /d/p/lafintel/unibench/exiv2/exiv2 &&\
      make clean
 } &
 
 {
-cd /autofz_bench/unibench/gdk-pixbuf-2.31.1 &&\
+cd /rcfuzz_bench/unibench/gdk-pixbuf-2.31.1 &&\
     ./autogen.sh --enable-static=yes --enable-shared=no --with-included-loaders=yes && \
     make clean && \
     make -j &&\
@@ -62,7 +62,7 @@ cd /autofz_bench/unibench/gdk-pixbuf-2.31.1 &&\
 } &
 
 {
-cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW_IN_SOURCE_BUILD=ON . &&\
+cd /rcfuzz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW_IN_SOURCE_BUILD=ON . &&\
     make clean && \
     make -j &&\
     cp src/appl/imginfo /d/p/lafintel/unibench/imginfo &&\
@@ -70,7 +70,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/jhead-3.00 &&\
+    cd /rcfuzz_bench/unibench/jhead-3.00 &&\
         make clean && \
         make -j &&\
         cp jhead /d/p/lafintel/unibench/jhead &&\
@@ -78,7 +78,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/libtiff-3.9.7 && ./autogen.sh && ./configure --disable-shared &&\
+    cd /rcfuzz_bench/unibench/libtiff-3.9.7 && ./autogen.sh && ./configure --disable-shared &&\
         make clean && \
         make -j &&\
         cp tools/tiffsplit /d/p/lafintel/unibench/tiffsplit &&\
@@ -86,7 +86,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/lame-3.99.5 && ./configure --disable-shared &&\
+    cd /rcfuzz_bench/unibench/lame-3.99.5 && ./configure --disable-shared &&\
         make clean && \
         make -j &&\
         cp frontend/lame /d/p/lafintel/unibench/lame &&\
@@ -94,7 +94,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/mp3gain-1.5.2 && sed -i 's/CC=/CC?=/' Makefile &&\
+    cd /rcfuzz_bench/unibench/mp3gain-1.5.2 && sed -i 's/CC=/CC?=/' Makefile &&\
         make clean && \
         make -j &&\
         cp mp3gain /d/p/lafintel/unibench/mp3gain &&\
@@ -102,7 +102,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/swftools-0.9.2/ && ./configure &&\
+    cd /rcfuzz_bench/unibench/swftools-0.9.2/ && ./configure &&\
         make clean && \
         make -j &&\
         cp src/wav2swf /d/p/lafintel/unibench/wav2swf &&\
@@ -112,7 +112,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 # Comment out ffmpeg for building under travis-ci
 # The memory usage seems to exceed 3GB and may make the whole build job timeout (50 minutes)
 {
-    cd /autofz_bench/unibench/ffmpeg-4.0.1 && ./configure --disable-shared --cc="$CC" --cxx="$CXX" &&\
+    cd /rcfuzz_bench/unibench/ffmpeg-4.0.1 && ./configure --disable-shared --cc="$CC" --cxx="$CXX" &&\
         make clean && \
         make -j &&\
         cp ffmpeg_g /d/p/lafintel/unibench/ffmpeg/ffmpeg &&\
@@ -120,7 +120,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/flvmeta-1.2.1 && cmake . &&\
+    cd /rcfuzz_bench/unibench/flvmeta-1.2.1 && cmake . &&\
         make clean && \
         make -j &&\
         cp src/flvmeta /d/p/lafintel/unibench/flvmeta &&\
@@ -128,7 +128,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/Bento4-1.5.1-628 && cmake . &&\
+    cd /rcfuzz_bench/unibench/Bento4-1.5.1-628 && cmake . &&\
         make clean && \
         make -j &&\
         cp mp42aac /d/p/lafintel/unibench/mp42aac &&\
@@ -136,7 +136,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/cflow-1.6 && ./configure &&\
+    cd /rcfuzz_bench/unibench/cflow-1.6 && ./configure &&\
         make clean && \
         make -j &&\
         cp src/cflow /d/p/lafintel/unibench/cflow &&\
@@ -144,7 +144,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/ncurses-6.1 && ./configure --disable-shared &&\
+    cd /rcfuzz_bench/unibench/ncurses-6.1 && ./configure --disable-shared &&\
         make clean && \
         make -j &&\
         cp progs/tic /d/p/lafintel/unibench/infotocap/infotocap &&\
@@ -152,7 +152,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/jq-1.5 && ./configure --disable-shared &&\
+    cd /rcfuzz_bench/unibench/jq-1.5 && ./configure --disable-shared &&\
         make clean && \
         make -j &&\
         cp jq /d/p/lafintel/unibench/jq &&\
@@ -160,7 +160,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/mujs-1.0.2 &&\
+    cd /rcfuzz_bench/unibench/mujs-1.0.2 &&\
         make clean && \
         build=debug make -j &&\
         cp build/debug/mujs /d/p/lafintel/unibench/mujs &&\
@@ -168,7 +168,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/xpdf-4.00 && cmake . &&\
+    cd /rcfuzz_bench/unibench/xpdf-4.00 && cmake . &&\
         make clean && \
         make -j &&\
         cp xpdf/pdftotext /d/p/lafintel/unibench/pdftotext &&\
@@ -177,7 +177,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 
 #--disable-amalgamation can be used for coverage build
 {
-    cd /autofz_bench/unibench/SQLite-3.8.9 && ./configure --disable-shared &&\
+    cd /rcfuzz_bench/unibench/SQLite-3.8.9 && ./configure --disable-shared &&\
         make clean && \
         make -j &&\
         cp sqlite3 /d/p/lafintel/unibench/sqlite3 &&\
@@ -185,7 +185,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/binutils-5279478 &&\
+    cd /rcfuzz_bench/unibench/binutils-5279478 &&\
         ./configure --disable-shared &&\
         for i in bfd libiberty opcodes libctf; do cd $i; ./configure --disable-shared && make clean && make -j; cd ..; done  &&\
         cd binutils  &&\
@@ -196,7 +196,7 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/binutils-2.28 && ./configure --disable-shared && \
+    cd /rcfuzz_bench/unibench/binutils-2.28 && ./configure --disable-shared && \
         make clean && \
         make -j && \
         cp binutils/objdump /d/p/lafintel/unibench/objdump &&\
@@ -209,14 +209,14 @@ cd /autofz_bench/unibench/jasper-2.0.12 && cmake -DJAS_ENABLE_SHARED=OFF -DALLOW
 } &
 
 {
-    cd /autofz_bench/unibench/libpcap-1.8.1 && ./configure --disable-shared &&\
+    cd /rcfuzz_bench/unibench/libpcap-1.8.1 && ./configure --disable-shared &&\
         make clean && \
         make -j &&\
-        cd /autofz_bench/unibench/tcpdump-4.8.1 && ./configure &&\
+        cd /rcfuzz_bench/unibench/tcpdump-4.8.1 && ./configure &&\
         make clean && \
         make -j &&\
         cp tcpdump /d/p/lafintel/unibench/tcpdump &&\
-        make clean && cd /autofz_bench/unibench/libpcap-1.8.1 && make clean
+        make clean && cd /rcfuzz_bench/unibench/libpcap-1.8.1 && make clean
 } &
 
 wait

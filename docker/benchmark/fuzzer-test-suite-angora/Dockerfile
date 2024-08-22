@@ -7,9 +7,9 @@ RUN mkdir -p /d/p/angora
 
 COPY --from=bench_fts /d/p/normal /d/p/normal
 
-COPY source/ /autofz_bench
+COPY source/ /rcfuzz_bench
 
-RUN cd /autofz_bench/fuzzer-test-suite
+RUN cd /rcfuzz_bench/fuzzer-test-suite
 
 
 COPY fuzzer-test-suite-angora/build_all.sh /

@@ -1,6 +1,6 @@
 #!/bin/bash -e
 SCRIPT_DIR=$(dirname $(realpath $0))
-IMAGE_PREFIX=autofz_bench
+IMAGE_PREFIX=rcfuzz_bench
 FUZZER_PREFIX=fuzzer_base
 
 # NOTE: order is important becasue of dependencies between Dockerfile
