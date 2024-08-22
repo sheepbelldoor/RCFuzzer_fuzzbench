@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import os
 
 # packages = find_packages()
-packages = ['autofz', 'autofz.fuzzer_driver', 'draw']
+packages = ['rcfuzz', 'rcfuzz.fuzzer_driver', 'draw']
 
 # https://github.com/google-research/arxiv-latex-cleaner/blob/main/setup.py
 
@@ -15,18 +15,18 @@ with open("requirements.txt") as f:
             install_requires.append(l_c)
 
 setup(
-    name='autofz',
+    name='rcfuzz',
     version='0.1',
     description="a meta fuzzer for automated fuzzer composition at runtime",
     packages=packages,
-    url='https://github.com/sslab-gatech/autofz',
-    author="Yu-Fu Fu",
-    author_email="yufu@gatech.edu",
+    url='https://github.com/hyeonminmo/RCFuzzer.git',
+    author="Hyeonmin Mo",
+    author_email="hyeonminmo@hanyang.ac.kr",
     install_requires=install_requires,
     entry_points={
-        'console_scripts': ['autofz = autofz.main:main',
-                            'autofz-draw = draw.draw_main:main'],
+        'console_scripts': ['rcfuzz = rcfuzz.main:main',
+                            'rcfuzz-draw = draw.draw_main:main'],
     },
-    package_data={'autofz': ['aflforkserver.so']},
+    package_data={'rcfuzz': ['aflforkserver.so']},
     python_requires=">=3.9.4",
 )
