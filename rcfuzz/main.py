@@ -783,35 +783,6 @@ class Schedule_Base(SchedulingAlgorithm):
 #                return True
         return False
 
-    def explore_parallel(self) -> bool:
-        logger.debug('explore parallel unfixed explore')
-        explore_time = self.explore_time
-
-        for fuzzer in FUZZERS:
-            num_explore = len(self.explore_fuzzers)
-            if fuzzer in self.explore_fuzzers:
-                update_fuzzer_limit(fuzzer, JOBS / num_explore)
-            else:
-                update_fuzzer_limit(fuzzer, 0)
-
-        remain_time = explore_time
-        while remain_time > 0:
-            '''
-            run 30 seconds for each fuzzer and see whether there is a winner
-            '''
-            run_time = min(remain_time, 30)
-            self.explore_wait(run_time)
-            self.dynamic_explore_time_round += run_time
-            remain_time -= run_time
-            '''
-            detect whether there is a winner
-            '''
-            self.has_winner_round = self.has_winner()
-            # NOTE: early exit!
-            if self.has_winner_round:
-                return True
-        return False
-
     def focus_cpu_assign(self,  new_cpu_assign, exploit_time: int) -> bool:
         '''
         return whether we find new coverage during focus phase
@@ -895,18 +866,6 @@ class Schedule_Base(SchedulingAlgorithm):
             # optimization: only sync between run_fuzzers
             do_sync(run_fuzzers, OUTPUT)
 
-        return self.find_new_bitmap()
-
-    def focus_cpu_assign_parallel(self, new_cpu_assign,
-                                  exploit_time: int) -> bool:
-        global OUTPUT, FUZZERS, JOBS
-        logger.debug('focus parallel')
-        for fuzzer, new_cpu in new_cpu_assign.items():
-            update_fuzzer_limit(fuzzer, new_cpu)
-        for fuzzer in FUZZERS:
-            if fuzzer not in new_cpu_assign:
-                update_fuzzer_limit(fuzzer, 0)
-        sleep(exploit_time)
         return self.find_new_bitmap()
 
     def focus_one(self, focus_fuzzer):
@@ -1026,6 +985,7 @@ class Schedule_Base(SchedulingAlgorithm):
         pass
 
     def main(self):
+
         # main while loop
         while True:
             if is_end(): return
@@ -1100,27 +1060,16 @@ class Schedule_Focus(Schedule_Base):
 
 
 class Schedule_RCFuzz(Schedule_Base):
-    '''
-    combination of best-only and resource distribution
-    based on whether we can find a winning fuzzer in explore phase
-    unfixed explore time: terminate exploreation phase earlier if
-    we already see the difference among fuzzer performance
-    '''
     def __init__(self,
                  fuzzers,tsFuzzers,
-                 explore_time=300,
-                 exploit_time=300,
+                 explore_time=600,
+                 exploit_time=600,
                  diff_threshold=10):
-        '''
-        explore_time: total time for explore phase + focus phase
-        diff_threshold: bitmap diff to determine whether there is a clear winner
-        if we find a winner in the explore phase, we use the remaining time for focus phase
-        '''
         # focus time is dynamically determined
         super().__init__(fuzzers=fuzzers,tsFuzzers=tsFuzzers,
                          explore_time=explore_time,
                          exploit_time=exploit_time)
-        self.name = f'Autofz_{explore_time}_{exploit_time}_AIMD_DT{diff_threshold}'
+        self.name = f'RCFuzzer_{explore_time}_{exploit_time}'
         self.policy_bitmap = policy.BitmapPolicy()
         self.focused_round = []
         self.picked_times = {}
@@ -1188,9 +1137,6 @@ class Schedule_RCFuzz(Schedule_Base):
         # explorearation phase - 3 step
         # check early exit condition
         if self.round_num == 1:
-           # if PARALLEL:
-           #    has_winner = self.explore_parallel()
-           # else:
             has_winner = self.explore_round_robin()
             
             fuzzer_threshold_sum =0
