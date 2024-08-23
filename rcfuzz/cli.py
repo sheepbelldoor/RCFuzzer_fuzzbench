@@ -22,8 +22,8 @@ class ArgsParser(Tap):
     output: Path
     fuzzer: List[Fuzzer]
     target: str
-    prep: int
-    focus: int
+    explore: int
+    exploit: int
     sync: int
     timeout: str
     empty_seed: bool
@@ -36,8 +36,8 @@ class ArgsParser(Tap):
         global config
         # NOTE: get default value from config, and overwritable from argv
         DEFAULT_SYNC_TIME = config['scheduler']['sync_time']
-        DEFAULT_PREP_TIME = config['scheduler']['prep_time']
-        DEFAULT_FOCUS_TIME = config['scheduler']['focus_time']
+        DEFAULT_EXPLORE_TIME = config['scheduler']['explore_time']
+        DEFAULT_EXPLOIT_TIME = config['scheduler']['exploit_time']
         available_fuzzers = list(config['fuzzer'].keys())
         available_targets = list(config['target'].keys())
 
@@ -45,10 +45,12 @@ class ArgsParser(Tap):
                           "-i",
                           help="Optional input (seed) directory",
                           required=False)
+
         self.add_argument("--output",
                           "-o",
                           help="An output directory",
                           required=True)
+
         self.add_argument("--fuzzer",
                           "-f",
                           type=str,
@@ -56,6 +58,7 @@ class ArgsParser(Tap):
                           choices=available_fuzzers + ['all'],
                           required=True,
                           help="baseline fuzzers to include")
+
         self.add_argument(
             "--target",
             "-t",
@@ -63,41 +66,45 @@ class ArgsParser(Tap):
             choices=available_targets,
             required=True,  # only one target allowed
             help="target program to fuzz")
-        self.add_argument("--prep",
+
+        self.add_argument("--explore",
                           type=int,
-                          default=DEFAULT_PREP_TIME,
-                          help='prepartion time (Time_{prep})')
-        self.add_argument("--focus",
+                          default=DEFAULT_EXPLORE_TIME,
+                          help='explore phase time (Time_{explore})')
+
+        self.add_argument("--exploit",
                           type=int,
-                          default=DEFAULT_FOCUS_TIME,
-                          help='focus time (Time_{focus})')
+                          default=DEFAULT_EXPLOIT_TIME,
+                          help='exploit phase time (Time_{exploit})')
+
         self.add_argument("--sync",
                           type=int,
                           default=DEFAULT_SYNC_TIME,
                           help='seed sync interval (used in EnFuzz mode)')
+
         self.add_argument("--timeout", "-T", default='24h')
+
         self.add_argument("--empty_seed",
                           "-empty",
                           action="store_true",
                           default=False,
                           help="use empty seed instead")
+
         self.add_argument("--crash_mode",
                           type=str,
                           choices=['trace', 'ip'],
                           default='ip',
                           help="method to deduplicate bugs.")
+
         self.add_argument("--focus-one",
                           default=None,
                           help="Used to run a specific individual fuzzer.")
-        self.add_argument("--diff_threshold",
+
+        self.add_argument("--threshold",
                           type=int,
-                          default=100,
+                          default=10,
                           help="difference threshold (theta_{init} in paper)")
-        self.add_argument("--parallel",
-                          "-p",
-                          action="store_true",
-                          default=False,
-                          help="parallel mode/multi-core implementaion")
+
         self.add_argument("--tar",
                           action="store_true",
                           default=False,
