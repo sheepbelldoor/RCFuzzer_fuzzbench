@@ -21,7 +21,6 @@ class ArgsParser(Tap):
     input: Path
     output: Path
     fuzzer: List[Fuzzer]
-    jobs: int
     target: str
     prep: int
     focus: int
@@ -29,10 +28,8 @@ class ArgsParser(Tap):
     timeout: str
     empty_seed: bool
     crash_mode: str
-    enfuzz: int
     focus_one: Optional[str]
     diff_threshold: int
-    parallel: bool
     tar: bool
 
     def configure(self):
@@ -52,10 +49,6 @@ class ArgsParser(Tap):
                           "-o",
                           help="An output directory",
                           required=True)
-        self.add_argument("--jobs",
-                          "-j",
-                          help="How many jobs (cores) to use",
-                          default=1)
         self.add_argument("--fuzzer",
                           "-f",
                           type=str,
@@ -93,10 +86,6 @@ class ArgsParser(Tap):
                           choices=['trace', 'ip'],
                           default='ip',
                           help="method to deduplicate bugs.")
-        self.add_argument("--enfuzz",
-                          type=int,
-                          default=None,
-                          help="EnFuzz mode, specifiy sync time")
         self.add_argument("--focus-one",
                           default=None,
                           help="Used to run a specific individual fuzzer.")

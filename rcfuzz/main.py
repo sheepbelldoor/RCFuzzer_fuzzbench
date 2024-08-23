@@ -23,7 +23,7 @@ from typing import Deque, Dict, List, Optional
 if __package__ is None:
     sys.path.append(
         os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-    __package__ = "autofz"
+    __package__ = "rcfuzz"
 
 from cgroupspy import trees
 from rich.console import Console
@@ -39,7 +39,7 @@ from . import thompson
 
 config: Dict = Config.CONFIG
 
-logger = logging.getLogger('autofz.main')
+logger = logging.getLogger('rcfuzz.main')
 
 logging.basicConfig(level=logging.INFO, filename='testlogging.log', filemode='w', format ='%(asctime)s - %(filename)s - %(funcName)s - %(lineno)d - %(message)s')
 
@@ -80,12 +80,11 @@ RUNNING: bool = False
 CGROUP_ROOT = ''
 
 # round robin vs paralle when using multi core
-PARALLEL: bool = False
 
 
-def terminate_autofz():
-    global AUTOFZ_PID
-    logger.critical('terminate autofz because of error')
+def terminate_rcfuzz():
+    global RCFUZZ_PID
+    logger.critical('terminate rcfuzz because of error')
     cleanup(1)
 
 
@@ -143,7 +142,7 @@ def thread_health_check():
     while not is_end():
         if not health_check_evaluator():
             logger.critical('evaluator health check fail')
-            terminate_autofz()
+            terminate_rcfuzz()
         pathlib.Path(health_check_path).touch(mode=0o666, exist_ok=True)
         time.sleep(60)
 
@@ -320,7 +319,7 @@ def start(fuzzer: Fuzzer,
         host_output_dir = f'{output_dir}/{ARGS.target}'
         if os.path.exists(f'{output_dir}/{ARGS.target}/{fuzzer}'):
             logger.error(f'Please remove {output_dir}/{ARGS.target}/{fuzzer}')
-            terminate_autofz()
+            terminate_rcfuzz()
         os.makedirs(host_output_dir, exist_ok=True)
 
     kw = gen_fuzzer_driver_args(fuzzer=fuzzer,
@@ -708,40 +707,6 @@ class Schedule_Base(SchedulingAlgorithm):
     def prep_wait(self, prep_time):
         sleep(prep_time)
 
-    def enfuzz(self):
-        global OUTPUT
-
-        sync_time = self.sync_time
-        for fuzzer in self.fuzzers:
-            self.run_one(fuzzer)
-            self.prep_wait(sync_time)
-            do_sync(self.fuzzers, OUTPUT)
-
-    def enfuzz_jobs(self, sync=True):
-        global OUTPUT
-        assert self.jobs
-        sync_time = self.sync_time
-        num_fuzzers = len(self.fuzzers)
-        cpu_per_fuzzer = self.jobs / num_fuzzers
-        for fuzzer in self.fuzzers:
-            update_fuzzer_limit(fuzzer, cpu_per_fuzzer)
-        self.prep_wait(sync_time)
-        # sync after running
-        if sync:
-            do_sync(self.fuzzers, OUTPUT)
-
-    def enfuzz_jobs_time(self, run_time, sync=True):
-        global OUTPUT
-        assert self.jobs
-        num_fuzzers = len(self.fuzzers)
-        cpu_per_fuzzer = self.jobs / num_fuzzers
-        for fuzzer in self.fuzzers:
-            update_fuzzer_limit(fuzzer, cpu_per_fuzzer)
-        self.prep_wait(run_time)
-        # sync after running
-        if sync:
-            do_sync(self.fuzzers, OUTPUT)
-
     def has_winner(self) -> bool:
         assert self.diff_threshold is not None
 
@@ -1084,64 +1049,6 @@ class Schedule_Base(SchedulingAlgorithm):
         logger.info(f"main 015 - {self.name}: post_run")
 
 
-class Schedule_EnFuzz(Schedule_Base):
-    '''
-    EnFuzz/CUPID/autofz-
-    '''
-    def __init__(self, fuzzers, sync_time, jobs):
-        # no use parent's init
-        self.fuzzers = fuzzers
-        self.sync_time = sync_time
-        self.name = f'EnFuzz_{sync_time}_j{jobs}'
-        self.jobs = jobs
-
-    def pre_round(self):
-
-        update_success = maybe_get_fuzzer_info(fuzzers=self.fuzzers)
-        if not update_success:
-            SLEEP = 10
-            logger.info(
-                f'main 016 - wait for all fuzzer having coverage, sleep {SLEEP} seconds')
-            sleep(SLEEP)
-            global START_TIME
-            elasp = time.time() - START_TIME
-            if elasp > 600:
-                terminate_autofz()
-        return update_success
-
-    def one_round(self):
-        if self.jobs == 1:
-            # round-robin version if jobs == 1
-            self.enfuzz()
-        else:
-            self.enfuzz_jobs()
-
-    def post_round(self):
-        fuzzer_info = get_fuzzer_info(self.fuzzers)
-        fuzzer_info = compress_fuzzer_info(self.fuzzers, fuzzer_info)
-        append_log('round', {'fuzzer_info': fuzzer_info})
-
-    def main(self):
-        while True:
-            if is_end(): return
-            if not self.pre_round(): continue
-            self.one_round()
-            self.post_round()
-
-    def pre_run(self) -> bool:
-        logger.info(f"main 017 - {self.name}: pre_run")
-        return True
-
-    def run(self):
-        if not self.pre_run():
-            return
-        self.main()
-        self.post_run()
-
-    def post_run(self):
-        logger.info(f"main 018 - {self.name}: post_run")
-
-
 class Schedule_Focus(Schedule_Base):
     def __init__(self, fuzzers, focus):
         self.fuzzers = fuzzers
@@ -1149,7 +1056,7 @@ class Schedule_Focus(Schedule_Base):
         self.name = f'Focus_{focus}'
 
     def pre_round(self):
-
+        
         update_success = maybe_get_fuzzer_info(fuzzers=self.fuzzers)
         if not update_success:
             SLEEP = 10
@@ -1159,7 +1066,7 @@ class Schedule_Focus(Schedule_Base):
             global START_TIME
             elasp = time.time() - START_TIME
             if elasp > 600:
-                terminate_autofz()
+                terminate_rcfuzz()
         return update_success
 
     def one_round(self):
@@ -1192,7 +1099,7 @@ class Schedule_Focus(Schedule_Base):
         logger.info(f"main 021 - {self.name}: post_run")
 
 
-class Schedule_Autofz(Schedule_Base):
+class Schedule_RCFuzz(Schedule_Base):
     '''
     combination of best-only and resource distribution
     based on whether we can find a winning fuzzer in prep phase
@@ -1244,7 +1151,7 @@ class Schedule_Autofz(Schedule_Base):
             global START_TIME
             elasp = time.time() - START_TIME
             if elasp > 600:
-                terminate_autofz()
+                terminate_rcfuzz()
 
         self.prep_time_round = 0
         self.focus_time_round = 0
@@ -1281,10 +1188,10 @@ class Schedule_Autofz(Schedule_Base):
         # preparation phase - 3 step
         # check early exit condition
         if self.round_num == 1:
-            if PARALLEL:
-                has_winner = self.prep_parallel()
-            else:
-                has_winner = self.prep_round_robin()
+           # if PARALLEL:
+           #    has_winner = self.prep_parallel()
+           # else:
+            has_winner = self.prep_round_robin()
             
             fuzzer_threshold_sum =0
             for fuzzer in FUZZERS:
@@ -1511,24 +1418,24 @@ class Schedule_Autofz(Schedule_Base):
 
 def init_cgroup():
     '''
-    cgroup /autofz is created by /init.sh, the command is the following:
+    cgroup /rcfuzz is created by /init.sh, the command is the following:
 
-    cgcreate -t yufu -a yufu -g cpu:/autofz
+    cgcreate -t yufu -a yufu -g cpu:/rcfuzz
     '''
     global FUZZERS, CGROUP_ROOT
     # start with /
     cgroup_path = cgroup_utils.get_cgroup_path()
     container_id = os.path.basename(cgroup_path)
     cgroup_path_fs = os.path.join('/sys/fs/cgroup/cpu', cgroup_path[1:])
-    autofz_cgroup_path_fs = os.path.join(cgroup_path_fs, 'autofz')
-    # print(autofz_cgroup_path_fs)
-    if not os.path.exists(autofz_cgroup_path_fs):
+    rcfuzz_cgroup_path_fs = os.path.join(cgroup_path_fs, 'rcfuzz')
+    # print(rcfuzz_cgroup_path_fs)
+    if not os.path.exists(rcfuzz_cgroup_path_fs):
         logger.critical(
-            'autofz cgroup not exists. make sure to run /init.sh first')
-        terminate_autofz()
+            'rcfuzz cgroup not exists. make sure to run /init.sh first')
+        terminate_rcfuzz()
     t = trees.Tree()
-    p = os.path.join('/cpu', cgroup_path[1:], 'autofz')
-    CGROUP_ROOT = os.path.join(cgroup_path, 'autofz')
+    p = os.path.join('/cpu', cgroup_path[1:], 'rcfuzz')
+    CGROUP_ROOT = os.path.join(cgroup_path, 'rcfuzz')
     # print('CGROUP_ROOT', CGROUP_ROOT)
     cpu_node = t.get_node_by_path(p)
     for fuzzer in FUZZERS:
@@ -1550,7 +1457,6 @@ def main():
     global CPU_ASSIGN
     global START_TIME
     global RUNNING
-    global PARALLEL
     random.seed()
     ARGS = cli.ArgsParser().parse_args()
 
@@ -1558,7 +1464,7 @@ def main():
 
     TARGET = ARGS.target
     unsuppored_fuzzers = config['target'][TARGET].get('unsupported', [])
-    logger.debug(f'autofz args is {ARGS}')
+    logger.debug(f'rcfuzz args is {ARGS}')
     available_fuzzers = list(config['fuzzer'].keys())
     available_fuzzers = [
         fuzzer for fuzzer in available_fuzzers
@@ -1591,8 +1497,8 @@ def main():
         f.write(f"{cmdline}\n")
     init()
     current_time = time.time()
-    LOG['autofz_args'] = ARGS.as_dict()  # remove Namespace
-    LOG['autofz_config'] = config
+    LOG['rcfuzz_args'] = ARGS.as_dict()  # remove Namespace
+    LOG['rcfuzz_config'] = config
     LOG['start_time'] = current_time
     LOG['algorithm'] = None
 
@@ -1601,9 +1507,9 @@ def main():
     FOCUS_TIME = ARGS.focus
 
     # NOTE: default is 1 core
-    JOBS = ARGS.jobs
+    JOBS = 1
     timeout = ARGS.timeout
-    PARALLEL = ARGS.parallel
+    #PARALLEL = ARGS.parallel
 
     result = coverage.thread_run_global(TARGET,
                                FUZZERS,
@@ -1634,23 +1540,12 @@ def main():
         if ARGS.focus_one and fuzzer != ARGS.focus_one: continue
         logger.info(f'main 036 - warm up {fuzzer}')
         CPU_ASSIGN[fuzzer] = 0
-        if ARGS.enfuzz:
-            # handle speical case for enfuzz, which will only use 1 CPU per fuzzer
-            # although it will be paused later
-            j = math.ceil(JOBS / len(FUZZERS))
-            start(fuzzer=fuzzer,
-                  output_dir=OUTPUT,
-                  timeout=timeout,
-                  jobs=j,
-                  input_dir=INPUT,
-                  empty_seed=ARGS.empty_seed)
-        else:
-            start(fuzzer=fuzzer,
-                  output_dir=OUTPUT,
-                  timeout=timeout,
-                  jobs=JOBS,
-                  input_dir=INPUT,
-                  empty_seed=ARGS.empty_seed)
+        start(fuzzer=fuzzer,
+                output_dir=OUTPUT,
+                timeout=timeout,
+                jobs=JOBS,
+                input_dir=INPUT,
+                empty_seed=ARGS.empty_seed)
 
         coverage.thread_run_fuzzer(TARGET,
                                    fuzzer,
@@ -1669,7 +1564,7 @@ def main():
             elasp = current_time - start_time
             if elasp > 180:
                 logger.critical('fuzzers start up error')
-                terminate_autofz()
+                terminate_rcfuzz()
             logger.info(
                 f'main 037 - fuzzer not {fuzzer} ready, sleep 10 seconds to warm up')
             time.sleep(2)
@@ -1702,20 +1597,14 @@ def main():
     if ARGS.focus_one:
         scheduler = Schedule_Focus(fuzzers=FUZZERS, focus=ARGS.focus_one)
         algorithm = ARGS.focus_one
-    # EnFuzz mode
-    elif ARGS.enfuzz:
-        scheduler = Schedule_EnFuzz(fuzzers=FUZZERS,
-                                    sync_time=ARGS.enfuzz,
-                                    jobs=JOBS)
-        algorithm = 'enfuzz'
-    # autofz mode
+    # rcfuzz mode
     else:
         diff_threshold = ARGS.diff_threshold
-        scheduler = Schedule_Autofz(fuzzers=FUZZERS,tsFuzzers=tsFuzzers,
+        scheduler = Schedule_RCFuzz(fuzzers=FUZZERS,tsFuzzers=tsFuzzers,
                                       prep_time=PREP_TIME,
                                       focus_time=FOCUS_TIME,
                                       diff_threshold=diff_threshold)
-        algorithm = 'autofz'
+        algorithm = 'rcfuzz'
 
     assert scheduler
     assert algorithm
@@ -1741,7 +1630,7 @@ def main():
     LOG['end_time'] = time.time()
 
     write_log()
-    logger.info('main 040 - autofz terminating')
+    logger.info('main 040 - rcfuzz terminating')
     cleanup(0)
 
 
