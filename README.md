@@ -10,7 +10,7 @@ First build baseline fuzzers and benchmarks.
 ./docker/build.sh
 ```
 
-Then, build the all-in-one docker including `autofz` and all the fuzzers/benchmarks.
+Then, build the all-in-one docker including `rcfuzzer` and all the fuzzers/benchmarks.
 
 ```
 ./build.sh
