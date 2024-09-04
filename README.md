@@ -39,7 +39,7 @@ To make it persistent between reboot; add the following lines to `/etc/sysctl.co
 ```
 fs.inotify.max_user_instances=8192
 fs.inotify.max_user_watches=524288
-'''
+```
 
 ## Running
 ### Launching a docker container
