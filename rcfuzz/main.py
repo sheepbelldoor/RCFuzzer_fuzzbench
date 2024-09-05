@@ -1461,7 +1461,7 @@ def main():
         algorithm = ARGS.focus_one
     # rcfuzz mode
     else:
-        diff_threshold = ARGS.diff_threshold
+        diff_threshold = ARGS.threshold
         scheduler = Schedule_RCFuzz(fuzzers=FUZZERS,tsFuzzers=tsFuzzers,
                                       explore_time=EXPLORE_TIME,
                                       exploit_time=EXPLOIT_TIME,
