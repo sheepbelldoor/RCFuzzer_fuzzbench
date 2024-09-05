@@ -29,7 +29,7 @@ class ArgsParser(Tap):
     empty_seed: bool
     crash_mode: str
     focus_one: Optional[str]
-    diff_threshold: int
+    threshold: int
     tar: bool
 
     def configure(self):

@@ -1366,7 +1366,7 @@ def main():
 
     SYNC_TIME = ARGS.sync
     EXPLORE_TIME = ARGS.explore
-    EXPLOIT_TIME = ARGS.focus
+    EXPLOIT_TIME = ARGS.exploit
 
     # NOTE: default is 1 core
     JOBS = 1
