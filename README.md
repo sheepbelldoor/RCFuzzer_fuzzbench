@@ -94,8 +94,6 @@ For example, we want to fuzz `exiv2` (by `-t`) using 4 fuzzers by `-f`: `AFL`, `
 
 The fuzzing result reside in `output` (by specifying `-o`).
 
-##### Single-core implementation #####
-
 ```sh
 rcfuzz -o output -T 24h -f afl fairfuzz aflfast qsym -t exiv2
 ```
