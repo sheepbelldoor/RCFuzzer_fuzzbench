@@ -985,15 +985,8 @@ class Schedule_Base(SchedulingAlgorithm):
         pass
 
     def main(self):
+        pass
 
-        # main while loop
-        while True:
-            if is_end(): return
-            if not self.pre_round(): continue
-            logger.info(f'main 012 - round {self.round_num} start')
-            self.one_round()
-            logger.info(f'main 013 - round {self.round_num} end')
-            self.post_round()
 
     def pre_run(self) -> bool:
         logger.info(f"main 014 - {self.name}: pre_run")
@@ -1276,6 +1269,49 @@ class Schedule_RCFuzz(Schedule_Base):
             self.all_bitmap_contribution[fuzzer] = Bitmap.empty()
             self.picked_times[fuzzer] = 0
         return True
+
+    def explore(self):
+        round_start_time = time.time()
+
+        global OUTPUT
+        do_sync(self.fuzzers, OUTPUT)
+
+        fuzzer_info = empty_fuzzer_info(self.fuzzers)
+
+        self.before_explore_fuzzer_info = fuzzer_info
+        logger.debug(f'before_fuzzer_info: {self.before_explore_fuzzer_info}')
+
+        explore_fuzzers = self.fuzzers
+        self.explore_fuzzers = explore_fuzzer
+
+        previous_bitmap = fuzzer_info['global_bitmap'].count()
+        previous_unique_bug = fuzzer_info['global_unique_bugs']['unique_bugs']
+
+        logger.info(f'main 900  - previous unique bug : {previous_unique_bug}')
+
+        has_winner = self.explore_round_robin()
+
+        logger.info(f'main 901 - explore end result(whole) - explore_bitmap: {explore_bitmap}, current_bitmap: {current_bitmap}, explore_unique_bug : { explore_unique_bug}, current_unique_bug : { current_unique_bug},  diff_threshold: {self.diff_threshold}')
+
+        for fuzzer in FUZZERS:
+            logger.info(f'main 902 - explore end result(each fuzzer) - fuzzer : { fuzzer }, fuzzer_success : { self.tsFuzzers[fuzzer].S }, fuzzer_fail : { self.tsFuzzers[fuzzer].F }, fuzzer run time : {self.tsFuzzers[fuzzer].total_runTime}, fuzzer branch difficulty : {self.tsFuzzers[fuzzer].diff}, fuzzer threshold : {self.tsFuzzers[fuzzer].threshold}')
+
+
+    def main(self):
+        if is_end():return
+        if not self.pre_round():return
+        logger.info(f'main 801 - explore phase start')
+        self.explore()
+        logger.info(f'main 802 - explore phase end')
+
+
+
+        while True:
+            if is_end():return
+            if not self.pre_round():continue
+            logger.info(f'main 802 - explore phase round {self.round_num} start')
+            self.one_round()
+            self.post_round()
 
 
 def init_cgroup():
