@@ -101,7 +101,8 @@ rcfuzz -o output -T 24h -f afl fairfuzz aflfast qsym -t exiv2
 ##### Tuning the parameter of two-phase algorithm.
 - `--explore`: explore phase time (in seconds) (default: 600)
 - `--exploit`: exploit phase time (in seconds) (default: 600)
-- `--threshold`: initial threshold (default: 10)
-- the default values are used in the paper.
+- `--diff`: the branch difficulty (default: 100)
+- `--threshold`: the bitmap difference threshold (default: 10)
+
 
 
