@@ -9,9 +9,8 @@ class fuzzer():
         self.F = 1 # fail count
         self.prob = 0.0
         self.total_runTime = 0
-        self.stack = 1
+        self.diff = 1
         self.threshold = 0
-        self.stackThreshold = 100
 
 def selectFuzzer(fuzzers):
     selectedFuzzers =[]
@@ -29,17 +28,13 @@ def updateFuzzerCount(tsfuzzer, selected_fuzzers, criteria):
     for selected_fuzzer in selected_fuzzers:
         fuzzer = tsfuzzer[selected_fuzzer]
         if criteria == 1:
-            fuzzer.S = fuzzer.S +  fuzzer.stack
+            fuzzer.S = fuzzer.S + fuzzer.diff
             logger.info(f'thomps 003 - {selected_fuzzers[0]} is success')
-            fuzzer.stackThreshold = fuzzer.stack/2
-            fuzzer.stack = fuzzer.stackThreshold + 3
+            fuzzer.diff *= 0.5 
         else:
-            fuzzer.F = fuzzer.F + fuzzer.stack
+            fuzzer.F = fuzzer.F + fuzzer.diff
             logger.info(f'thomps 004 - {selected_fuzzers[0]} is fail')
-            if fuzzer.stack < fuzzer.stackThreshold :
-                fuzzer.stack *= 2
-            else:
-                fuzzer.stack +=1
+            fuzzer.diff += 1
 
 def updateFuzzerCountPrep(tsfuzzer, selected_fuzzer, criteria):
     fuzzer = tsfuzzer[selected_fuzzer]

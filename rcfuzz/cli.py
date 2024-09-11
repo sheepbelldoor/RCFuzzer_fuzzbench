@@ -29,6 +29,7 @@ class ArgsParser(Tap):
     empty_seed: bool
     crash_mode: str
     focus_one: Optional[str]
+    diff: int
     threshold: int
     tar: bool
 
@@ -100,12 +101,18 @@ class ArgsParser(Tap):
                           default=None,
                           help="Used to run a specific individual fuzzer.")
 
+        self.add_argument("--diff",
+                          type=int,
+                          default=100,
+                          help="the branch difficulty")
+
         self.add_argument("--threshold",
                           type=int,
                           default=10,
-                          help="difference threshold (theta_{init} in paper)")
+                          help="the bitmap difference threshold")
 
         self.add_argument("--tar",
                           action="store_true",
                           default=False,
                           help="tar fuzzer/eval directories")
+
