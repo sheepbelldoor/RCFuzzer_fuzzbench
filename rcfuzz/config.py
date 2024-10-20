@@ -45,40 +45,40 @@ CONFIG: Dict = {
             'input_dir': INPUT_DIR, # queue dir
             'crash_dir': CRASH_DIR,
             'skip_crash_file': ['README.txt'],
-            'command': '/fuzzer/afl/afl-fuzz', # fuzzer binary path
-            'target_root': '/d/p/justafl', # which binary is used to fuzz
+            'command': '/out/fuzzers/afl/afl-fuzz', # fuzzer binary path
+            'target_root': '/out/afl', # which binary is used to fuzz
             'afl_based': True,
         },
         'aflfast': {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
             'skip_crash_file': ['README.txt'],
-            'command': '/fuzzer/aflfast/afl-fuzz',
-            'target_root': '/d/p/justafl',
+            'command': '/out/fuzzers/aflfast/afl-fuzz',
+            'target_root': '/out/afl',
             'afl_based': True
         },
         'fairfuzz': {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
             'skip_crash_file': ['README.txt'],
-            'command': '/fuzzer/afl-rb/afl-fuzz',
-            'target_root': '/d/p/justafl',
+            'command': '/out/fuzzers/afl-rb/afl-fuzz',
+            'target_root': '/out/afl',
             'afl_based': True
         },
         'mopt': {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
             'skip_crash_file': ['README.txt'],
-            'command': '/fuzzer/MOpt-AFL/MOpt/afl-fuzz',
-            'target_root': '/d/p/justafl',
+            'command': '/out/fuzzers/MOpt-AFL/MOpt/afl-fuzz',
+            'target_root': '/out/afl',
             'afl_based': True,
         },
         'learnafl': {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
             'skip_crash_file': ['README.txt'],
-            'command': '/fuzzer/LearnAFL/afl-fuzz',
-            'target_root': '/d/p/justafl',
+            'command': '/out/fuzzers/LearnAFL/afl-fuzz',
+            'target_root': '/out/afl',
             'afl_based': True
         },
         'qsym': {
@@ -88,31 +88,31 @@ CONFIG: Dict = {
             'afl_based': True,
             'target_root': '/d/p/normal',  # for qsym
             # afl_command # reuse base afl
-            'qsym_command': '/fuzzer/qsym/bin/run_qsym_afl.py'
+            'qsym_command': '/out/fuzzers/qsym/bin/run_qsym_afl.py'
         },
         'lafintel': {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
             'skip_crash_file': ['README.txt'],
-            'command': '/fuzzer/afl++/afl-fuzz',
-            'target_root': '/d/p/lafintel',
+            'command': '/out/fuzzers/aflpp/afl-fuzz',
+            'target_root': '/out/lafintel',
             'afl_based': True
         },
         'redqueen': {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
             'skip_crash_file': ['README.txt'],
-            'target_root': '/d/p/aflclangfast',
-            'target_root_cmp': '/d/p/aflclangfastcmplog',
-            'command': '/fuzzer/afl++/afl-fuzz',
+            'target_root': '/out/aflpp',
+            'target_root_cmp': '/', # NO
+            'command': '/out/fuzzers/aflpp/afl-fuzz',
             'afl_based': True
         },
         'radamsa': {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
             'skip_crash_file': ['README.txt'],
-            'target_root': '/d/p/aflclangfast',
-            'command': '/fuzzer/afl++/afl-fuzz',
+            'target_root': '/out/aflpp',
+            'command': '/out/fuzzers/aflpp/afl-fuzz',
             'aflpp_dir': '/fuzzer/afl++',
             'afl_based': True
         },
@@ -120,15 +120,15 @@ CONFIG: Dict = {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
             'create_output_dir': False,
-            'target_root': '/d/p/angora/fast',
+            'target_root': '/out/angora', # NO
             'target_root_taint': '/d/p/angora/taint',
-            'command': '/fuzzer/angora/angora_fuzzer',
+            'command': '/out/fuzzers/angora/angora_fuzzer',
             'afl_based': False,
         },
         'libfuzzer': {
             'input_dir': INPUT_DIR,
             'crash_dir': CRASH_DIR,
-            'target_root': '/d/p/libfuzzer',
+            'target_root': '/out/libfuzzer',
             'skip_crash_file': ['README.txt'],
             'command': None,  # target as fuzzer
             'afl_based': False

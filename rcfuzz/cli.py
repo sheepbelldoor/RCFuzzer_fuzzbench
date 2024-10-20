@@ -64,7 +64,7 @@ class ArgsParser(Tap):
             "--target",
             "-t",
             type=str,
-            choices=available_targets,
+            # choices=available_targets,
             required=True,  # only one target allowed
             help="target program to fuzz")
 
