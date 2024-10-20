@@ -273,8 +273,8 @@ def gen_fuzzer_driver_args(fuzzer: Fuzzer,
     seed = None
     if input_dir:
         seed = input_dir
-    elif empty_seed:
-        seed = '/seeds/custom/empty'
+    # elif empty_seed:
+    #     seed = '/seeds/custom/empty'
     else:
         seed = target_config['seed']
     group = target_config['group']
@@ -288,7 +288,8 @@ def gen_fuzzer_driver_args(fuzzer: Fuzzer,
         'seed': seed,
         'output': output,
         'group': group,
-        'program': TARGET,
+        # 'program': TARGET,
+        'program': target_config['fuzz_target'],
         'argument': target_args,
         'thread': jobs,
         'cgroup_path': cgroup_path
